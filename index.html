@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Стандарт уборки</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #111111;
+    --muted: #767676;
+    --line: #e4e4e4;
+    --soft: #f4f4f4;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+  /* Emoji are shown in monochrome to keep the page black and white. */
+  .e, .ico, .room-ico, .big, .badge, .legend b { filter: grayscale(1) contrast(1.15); }
+  svg.ic { width: 1em; height: 1em; vertical-align: -0.12em; }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+    border-bottom: 1px solid var(--ink);
+    padding-top: env(safe-area-inset-top);
+  }
+  .head-row { display: flex; align-items: center; gap: 12px; padding-top: 10px; }
+  h1 { font-size: 17px; line-height: 1.25; margin: 0; flex: 1; font-weight: 700; letter-spacing: -.01em; }
+  .lang { display: flex; border: 1px solid var(--ink); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .lang button {
+    border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 14px;
+    min-width: 46px; min-height: 38px; color: var(--ink); cursor: pointer;
+  }
+  .lang button.on { background: var(--ink); color: #fff; }
+  .progress { margin-top: 10px; }
+  .bar { height: 4px; background: var(--line); }
+  .bar > div { height: 100%; width: 0; background: var(--ink); transition: width .25s; }
+  .meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 6px 0 10px; font-size: 15px; }
+  .meta b { font-variant-numeric: tabular-nums; }
+  .timer { font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 6px; padding: 0 8px; border: 1px solid transparent; }
+  .timer.warn { border-color: var(--ink); }
+  .timer.over { background: var(--ink); color: #fff; }
+
+  main { padding-top: 8px; padding-bottom: 48px; }
+  h2 {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
+    margin: 32px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+  h2.floor { color: var(--muted); border-bottom: 0; margin: 24px 0 8px; padding: 0; }
+  h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; }
+
+  .box { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+  .box.plain { border: 0; padding: 0 0 4px; }
+  /* Strong accent: inverted block */
+  .box.inverse { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .box.inverse .big { filter: grayscale(1) brightness(1.4); }
+
+  /* Rules with icons */
+  .rule { display: flex; align-items: center; gap: 12px; padding: 7px 0; }
+  .rule .big { font-size: 26px; width: 40px; text-align: center; flex-shrink: 0; position: relative; }
+  .rule .big.no::after {
+    content: ""; position: absolute; left: 4px; right: 4px; top: 50%; height: 3px;
+    background: #fff; transform: rotate(-35deg);
+  }
+  .flow { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; padding: 6px 0 10px; }
+  .chip {
+    position: relative; display: flex; flex-direction: column; align-items: center;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 4px 6px;
+    font-size: 12px; line-height: 1.2; text-align: center;
+  }
+  .chip .e { font-size: 24px; line-height: 1.25; }
+  .chip .n {
+    position: absolute; top: -7px; left: -5px; width: 19px; height: 19px; border-radius: 50%;
+    background: var(--ink); color: #fff; font-weight: 700; font-size: 11px;
+    display: grid; place-content: center;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 8px; }
+  .legend span { border: 1px solid var(--line); border-radius: 20px; padding: 5px 12px; font-size: 14px; }
+  .legend span.attn { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .legend b { font-size: 18px; vertical-align: -2px; }
+  .norm { font-size: 17px; font-weight: 700; padding-top: 4px; }
+
+  /* Checklist steps: one checkbox per finished stage */
+  .step {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 0; border-top: 1px solid var(--line); cursor: pointer;
+  }
+  .step:first-child { border-top: 0; }
+  .step .body { flex: 1; min-width: 0; }
+  .step .head { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+  .step .head .e { font-size: 22px; line-height: 1; }
+  .step .head .t { font-weight: 700; font-size: 18px; flex: 1; }
+  .badge {
+    font-size: 13px; font-weight: 700; border: 1px solid var(--ink); border-radius: 20px;
+    padding: 2px 10px; flex-shrink: 0; white-space: nowrap;
+  }
+  .badge.attn { background: var(--ink); color: #fff; }
+  .subs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .sub {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 14px; line-height: 1.2; background: var(--soft); border-radius: 8px; padding: 4px 8px;
+  }
+  .sub .e { font-size: 16px; }
+  .sub .ar { color: var(--muted); }
+  /* Accent where attention is needed: glove changes, owner's product */
+  .sub.attn { background: var(--ink); color: #fff; font-weight: 700; }
+  .sub.attn .ar { color: #bbb; }
+  .sub.attn .e { filter: grayscale(1) brightness(1.5); }
+  .step input:checked ~ .body { opacity: .35; }
+  .step input:checked ~ .body .t { text-decoration: line-through; }
+  .step.critical { border: 2px solid var(--ink); border-radius: var(--radius); padding: 12px 10px; margin: 8px -6px; }
+  .step.critical + .step { border-top: 0; }
+
+  input[type=checkbox] {
+    -webkit-appearance: none; appearance: none; flex-shrink: 0;
+    width: 30px; height: 30px; margin: 0; border: 2px solid var(--ink); border-radius: 6px;
+    background: #fff; display: grid; place-content: center; cursor: pointer;
+  }
+  input[type=checkbox]::after {
+    content: ""; width: 8px; height: 15px; border: solid #fff; border-width: 0 3px 3px 0;
+    transform: rotate(45deg) translate(-1px, -2px); opacity: 0;
+  }
+  input[type=checkbox]:checked { background: var(--ink); }
+  input[type=checkbox]:checked::after { opacity: 1; }
+  input[type=checkbox]:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible {
+    outline: 3px solid var(--ink); outline-offset: 2px;
+  }
+
+  /* Room cards */
+  .card { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .card.done { border-color: var(--ink); }
+  .card-head {
+    width: 100%; min-height: 64px; display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; border: 0; background: transparent; font: inherit; color: inherit;
+    text-align: left; cursor: pointer;
+  }
+  .room-ico { font-size: 28px; width: 38px; text-align: center; flex-shrink: 0; line-height: 1; }
+  .card-title { flex: 1; }
+  .card-title b { display: block; font-size: 18px; }
+  .card-title small { font-size: 15px; letter-spacing: 2px; filter: grayscale(1); }
+  .count {
+    font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px;
+    border: 1px solid var(--ink); border-radius: 20px; padding: 2px 10px; white-space: nowrap;
+  }
+  .card.done .count { background: var(--ink); color: #fff; }
+  .card.done .count::before { content: "✓ "; }
+  .chev { width: 10px; height: 10px; border: solid var(--ink); border-width: 0 2px 2px 0; transform: rotate(45deg); margin: 0 4px 4px; transition: transform .2s; flex-shrink: 0; }
+  .card.open .chev { transform: rotate(-135deg); margin-bottom: -4px; }
+  .card-body { display: none; padding: 0 16px 8px; border-top: 1px solid var(--line); }
+  .card.open .card-body { display: block; }
+
+  /* Buttons */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; min-height: 56px; padding: 12px 18px; margin: 10px 0;
+    border: 1px solid var(--ink); border-radius: var(--radius); font: inherit; font-weight: 700; font-size: 17px;
+    cursor: pointer; background: #fff; color: var(--ink); text-align: center;
+  }
+  .btn:active { transform: scale(.99); }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.primary:disabled { background: #fff; color: var(--ink); cursor: default; }
+  .btn.quiet { border-color: var(--line); color: var(--muted); font-weight: 400; }
+
+  /* Supplies */
+  .group { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 18px 0 2px; }
+  .group:first-child { margin-top: 0; }
+  .supply { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .group + .supply { border-top: 0; }
+  .supply label { flex: 1; display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 46px; }
+  .supply .ico { font-size: 22px; width: 30px; text-align: center; flex-shrink: 0; line-height: 1; }
+  .supply.low label .txt { font-weight: 700; }
+  .supply.low { background: var(--soft); box-shadow: inset 4px 0 0 var(--ink); margin: 0 -16px; padding: 6px 16px; }
+  .qty {
+    width: 72px; min-height: 44px; font: inherit; text-align: center;
+    border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; background: #fff;
+  }
+  textarea, .field {
+    width: 100%; font: inherit; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px; background: #fff; color: var(--ink);
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  .field { min-height: 56px; }
+  .lbl { display: block; font-weight: 700; margin: 14px 0 6px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+  .note-video { border-left: 4px solid var(--ink); padding: 8px 12px; margin: 8px 0; font-weight: 700; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 16px;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); z-index: 20;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="head-row">
+      <h1 id="title"></h1>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+    <div class="progress">
+      <div class="bar"><div id="bar"></div></div>
+      <div class="meta">
+        <span id="progressText"></span>
+        <span id="timer" class="timer"></span>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Data ----------
+  var NORM_MIN = 180;
+  var WARN_MIN = 150;
+  // Text in both languages plus an icon (emoji, or 'vac' / 'mop' for inline SVG).
+  function T(ru, en, icon) { return { ru: ru, en: en, icon: icon }; }
+  // Same, marked as needing attention (glove change, owner's product).
+  function A(ru, en, icon) { return { ru: ru, en: en, icon: icon, attn: true }; }
+
+  // No emoji exists for these, so they are drawn inline in the text colour.
+  var SVG = {
+    vac: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M9 3h5M11.5 3v7"/><rect x="7" y="10" width="10" height="8" rx="2.5"/><path d="M3 20.5h18"/>' +
+      '<circle cx="7" cy="20.5" r=".6" fill="currentColor"/><circle cx="17" cy="20.5" r=".6" fill="currentColor"/></svg>',
+    mop: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M16 2l-4.5 12"/><path d="M6 15h11l-1 3H7z"/><path d="M8 18l-1 4M11 18v4M14 18l1 4"/></svg>'
+  };
+
+  var NO_GLOVES = { icon: '✋', t: T('без перчаток', 'no gloves') };
+  var GLOVES = { icon: '🧤', t: T('перчатки', 'gloves'), attn: true };
+  var NEW_GLOVES = { icon: '🧤', t: T('новые перчатки', 'new gloves'), attn: true };
+
+  var UI = {
+    title: T('Стандарт уборки таунхауса 210 м²', 'Townhouse 210 m² Cleaning Standard'),
+    docTitle: T('Стандарт уборки', 'Cleaning Standard'),
+    prep: T('Подготовка', 'Preparation'),
+    forbidden: T('Строго запрещено', 'Strictly forbidden'),
+    order: T('Порядок работы', 'Work order'),
+    start: T('Начать уборку', 'Start cleaning'),
+    started: T('Уборка идёт с ', 'Cleaning since '),
+    rooms: T('Комнаты', 'Rooms'),
+    supplies: T('Заканчивается — купить', 'Running low — to buy'),
+    qty: T('кол-во', 'qty'),
+    other: T('Другое', 'Other'),
+    otherPh: T('Что ещё купить (каждое с новой строки)', 'Anything else to buy (one per line)'),
+    notes: T('Замечания', 'Notes'),
+    notesPh: T('Поломки, пятна, нет доступа в комнату…', 'Breakages, stains, no access to a room…'),
+    finish: T('Завершение', 'Finishing'),
+    phone: T('WhatsApp хозяйки', 'Owner\'s WhatsApp'),
+    phonePh: T('79001234567', '79001234567'),
+    phoneHint: T('Международный формат, только цифры. Сохраняется. Пусто — WhatsApp предложит выбрать контакт.',
+                 'International format, digits only. It is saved. Empty — WhatsApp will ask you to pick a contact.'),
+    send: T('Отправить отчёт в WhatsApp', 'Send report via WhatsApp'),
+    copy: T('Скопировать текст отчёта', 'Copy report text'),
+    copied: T('Текст отчёта скопирован', 'Report text copied'),
+    copyFail: T('Не удалось скопировать', 'Could not copy'),
+    video: T('После отправки текста приложите короткое видео в тот же чат.', 'After sending the text, attach a short video in the same chat.'),
+    reset: T('Новая уборка', 'New cleaning'),
+    resetConfirm: T('Начать новую уборку? Все отметки, таймер, заявка и замечания будут сброшены.',
+                    'Start a new cleaning? All checks, the timer, purchase list and notes will be cleared.'),
+    resetDone: T('Готово. Можно начинать новую уборку.', 'Done. Ready for a new cleaning.'),
+    notStarted: T('Таймер не запущен', 'Timer not started'),
+    of: T('из', 'of'),
+    over: T('Превышена норма', 'Time limit exceeded'),
+    norm: T('Норма: 3 часа на весь дом', 'Limit: 3 hours for the whole house')
+  };
+
+  // A step is one checkbox for one finished stage of work.
+  // subs: what the stage includes (shown as small icons); seq: subs are done in this exact order;
+  // critical: framed, because hygiene rules matter most here.
+  var PREP = [
+    { t: T('Готова к работе', 'Ready to work', '👕'), subs: [
+      T('рабочая одежда', 'work clothes', '👕'),
+      T('обувь', 'shoes', '👟'),
+      T('руки', 'hands', '🧼'),
+      T('инвентарь и тряпки', 'tools & cloths', '🪣')
+    ] },
+    { t: T('Правила прочитаны', 'Rules read', '📖') }
+  ];
+
+  // big: icon; no: strike-through over it
+  var FORBIDDEN = [
+    { big: '🗄️', no: true, t: T('Закрытые шкафы и ящики не открывать', 'Never open closed cabinets or drawers') },
+    { big: '🛁', t: T('Ванна и душ — ТОЛЬКО средство хозяйки', 'Bath & shower — ONLY the owner\'s product') },
+    { big: '🏷️', t: T('Тряпки — строго по надписям', 'Cloths — strictly as labeled') },
+    { big: '🚽', t: T('После унитаза перчатки и салфетки → сразу в мусор', 'After the toilet: gloves & wipes → trash at once') }
+  ];
+
+  var ROUTE = [
+    T('2 этаж', '2nd floor', '⬆️'),
+    T('Лестница', 'Stairs', '🪜'),
+    T('1 этаж', '1st floor', '⬇️'),
+    T('Терраса', 'Terrace', '🌿')
+  ];
+  var ROOM_STEPS = [
+    T('Порядок', 'Tidy', '🗂️'),
+    T('Бельё', 'Linen', '🛏️'),
+    T('Пыль', 'Dust', '🪶'),
+    T('Санузел', 'Bathroom', '🚽'),
+    T('Пылесос', 'Vacuum', 'vac'),
+    T('Полы', 'Floors', 'mop')
+  ];
+  var GLOVE_LEGEND = [
+    { icon: '✋', t: T('без перчаток: порядок, пыль', 'no gloves: tidy, dust') },
+    { icon: '🧤', attn: true, t: T('перчатки: раковины, душ, унитаз', 'gloves: sinks, shower, toilet') },
+    { icon: '🧤', attn: true, t: T('новые перчатки: полы', 'new gloves: floors') }
+  ];
+
+  var FINISH = [
+    { t: T('Дом закрыт', 'House closed up', '🔒'), subs: [
+      T('окна закрыты', 'windows closed', '🪟'),
+      T('мусор вынесен', 'trash out', '🗑️'),
+      T('инвентарь убран, тряпки в стирку', 'tools away, cloths to laundry', '🧺')
+    ] },
+    { t: T('Видео снято', 'Video recorded', '🎥') },
+    { t: T('Отчёт отправлен', 'Report sent', '💬') }
+  ];
+
+  var SUPPLY_GROUPS = [
+    { t: T('Средства', 'Cleaning products'), items: [
+      ['bath', T('Средство для ванны и душа (хозяйки)', 'Bath & shower product (owner\'s)', '🛁')],
+      ['toilet', T('Средство для унитаза и сантехники', 'Toilet & fixtures cleaner', '🚽')],
+      ['glass', T('Средство для стёкол и зеркал', 'Glass & mirror cleaner', '🪟')],
+      ['dish', T('Средство для мытья посуды', 'Dishwashing liquid', '🍽️')],
+      ['kitchen', T('Средство для кухни (жир, плита)', 'Kitchen degreaser', '🍳')],
+      ['dust', T('Средство для мебели и пыли', 'Furniture & dust spray', '🪶')],
+      ['floor', T('Средство для мытья пола', 'Floor cleaner', 'mop')]
+    ] },
+    { t: T('Расходники', 'Consumables'), items: [
+      ['gloves', T('Перчатки', 'Gloves', '🧤')],
+      ['wipes', T('Одноразовые салфетки', 'Disposable wipes', '📄')],
+      ['sponges', T('Губки', 'Sponges', '🧽')],
+      ['bags', T('Мешки для мусора', 'Trash bags', '🗑️')],
+      ['tp', T('Туалетная бумага', 'Toilet paper', '🧻')],
+      ['towels', T('Бумажные полотенца', 'Paper towels', '📜')],
+      ['soap', T('Жидкое мыло', 'Liquid soap', '🧴')]
+    ] },
+    { t: T('Инвентарь', 'Equipment'), items: [
+      ['rags', T('Тряпки (микрофибра)', 'Cloths (microfiber)', '🧣')],
+      ['mops', T('Мопы (насадки)', 'Mop pads', 'mop')],
+      ['mophandle', T('Швабра', 'Mop / floor wiper', 'mop')]
+    ] }
+  ];
+  var SUPPLIES = [];
+  SUPPLY_GROUPS.forEach(function (g) { SUPPLIES = SUPPLIES.concat(g.items); });
+
+  var VAC_MOP = { t: T('Пылесос и полы', 'Vacuum & floors', 'mop'), gl: NEW_GLOVES, seq: true, subs: [
+    T('пылесос', 'vacuum', 'vac'),
+    A('новые перчатки', 'new gloves', '🧤'),
+    T('мыть → к выходу', 'mop → to the exit', 'mop')
+  ] };
+
+  function bedroom(n) {
+    return {
+      id: 'bed' + n,
+      icon: '🛏️',
+      name: T('Спальня ' + n, 'Bedroom ' + n),
+      sub: '👔 🚽',
+      steps: [
+        { t: T('Порядок и бельё', 'Tidy & linen', '🗂️'), gl: NO_GLOVES, subs: [
+          T('вещи', 'things', '👕'),
+          T('мусор, пакеты', 'trash, bags', '🗑️'),
+          T('гардероб: открытые полки', 'wardrobe: open shelves', '👔'),
+          T('бельё → стирка', 'linen → laundry', '🧺'),
+          T('застелить', 'make the bed', '🛏️')
+        ] },
+        { t: T('Пыль', 'Dusting', '🪶'), gl: NO_GLOVES, subs: [
+          T('мебель, подоконники', 'furniture, sills', '🗄️'),
+          T('зеркала, выключатели, ручки', 'mirrors, switches, handles', '🪞'),
+          T('полки гардероба', 'wardrobe shelves', '👔')
+        ] },
+        { t: T('Санузел', 'Bathroom', '🚽'), gl: GLOVES, critical: true, seq: true, subs: [
+          A('надеть перчатки', 'put on gloves', '🧤'),
+          T('раковина', 'sink', '🚰'),
+          A('душ/ванна — только средство хозяйки', 'shower/bath — owner\'s product only', '🛁'),
+          T('смыв', 'flush', '🔘'),
+          T('гиг. душ', 'bidet', '💦'),
+          T('унитаз', 'toilet', '🚽'),
+          A('перчатки → в мусор', 'gloves → trash', '🗑️'),
+          T('руки', 'hands', '🧼')
+        ] },
+        { t: VAC_MOP.t, gl: NEW_GLOVES, seq: true, subs: [
+          T('пылесос: комната, под кроватью, гардероб', 'vacuum: room, under bed, wardrobe', 'vac'),
+          A('новые перчатки', 'new gloves', '🧤'),
+          T('пол санузла', 'bathroom floor', '🚽'),
+          T('гардероб, спальня → к выходу', 'wardrobe, bedroom → exit', '🚪')
+        ] }
+      ]
+    };
+  }
+
+  function simpleRoom(id, icon, name) {
+    return { id: id, icon: icon, name: name, steps: [
+      { t: T('Вся уборка', 'Full cleaning', '🧹'), seq: true, subs: [
+        T('вещи, мусор', 'things, trash', '🗑️'),
+        T('пыль', 'dust', '🪶'),
+        T('пылесос', 'vacuum', 'vac'),
+        A('новые перчатки', 'new gloves', '🧤'),
+        T('пол → к выходу', 'mop → exit', 'mop')
+      ] }
+    ] };
+  }
+
+  var FLOORS = [
+    { name: T('2 этаж', '2nd floor'), rooms: [bedroom(1), bedroom(2), bedroom(3)] },
+    { name: T('Между этажами', 'Between floors'), rooms: [
+      { id: 'stairs', icon: '🪜', name: T('Лестница', 'Stairs'), steps: [
+        { t: T('Ступени и перила', 'Steps & handrails', '🪜'), subs: [
+          T('убрать предметы', 'clear items', '📦'),
+          T('перила', 'handrails', '🪜')
+        ] },
+        { t: T('Пылесос и мытьё сверху вниз', 'Vacuum & mop top to bottom', 'mop'), gl: NEW_GLOVES, seq: true, subs: [
+          T('пылесос ⬇️', 'vacuum ⬇️', 'vac'),
+          A('новые перчатки', 'new gloves', '🧤'),
+          T('мыть ⬇️', 'mop ⬇️', 'mop')
+        ] }
+      ] }
+    ] },
+    { name: T('1 этаж', '1st floor'), rooms: [
+      { id: 'living', icon: '🛋️', name: T('Гостиная', 'Living room'), steps: [
+        { t: T('Порядок и пыль', 'Tidy & dust', '🪶'), gl: NO_GLOVES, subs: [
+          T('вещи, пледы, подушки', 'things, throws, cushions', '🛋️'),
+          T('мусор', 'trash', '🗑️'),
+          T('столы, полки, подоконники', 'tables, shelves, sills', '🪶'),
+          T('выключатели, ручки', 'switches, handles', '💡')
+        ] },
+        VAC_MOP
+      ] },
+      { id: 'kitchen', icon: '🍳', name: T('Кухня', 'Kitchen'), steps: [
+        { t: T('Порядок', 'Tidy', '🗂️'), gl: NO_GLOVES, subs: [
+          T('вещи', 'things', '👕'),
+          T('мусор', 'trash', '🗑️')
+        ] },
+        { t: T('Поверхности и раковина', 'Surfaces & sink', '🚰'), seq: true, subs: [
+          T('руки', 'hands', '🧼'),
+          T('столешницы, стол, фасады, техника', 'counters, table, fronts, appliances', '🍽️'),
+          A('надеть перчатки', 'put on gloves', '🧤'),
+          T('раковина', 'sink', '🚰'),
+          A('перчатки → в мусор', 'gloves → trash', '🗑️')
+        ] },
+        VAC_MOP
+      ] },
+      simpleRoom('hall', '🚪', T('Коридор', 'Hallway')),
+      simpleRoom('utility', '🧺', T('Уборочная комната', 'Utility room')),
+      simpleRoom('vestibule', '👢', T('Тамбур', 'Vestibule'))
+    ] },
+    { name: T('Улица', 'Outside'), rooms: [
+      { id: 'terrace', icon: '🌿', name: T('Терраса', 'Terrace'), steps: [
+        { t: T('Мебель и пол', 'Furniture & floor', '🌿'), subs: [
+          T('уличная мебель', 'outdoor furniture', '🪑'),
+          T('подмести', 'sweep', '🧹')
+        ] }
+      ] }
+    ] }
+  ];
+
+  // Flat list of all checklist steps, in walk order, grouped by section.
+  // section: { id, name, items: [{ id, step }] }
+  function sectionItems(prefix, steps) {
+    return steps.map(function (s, i) { return { id: prefix + '-' + i, step: s }; });
+  }
+  var SECTIONS = [];
+  SECTIONS.push({ id: 'prep', name: UI.prep, items: sectionItems('prep', PREP) });
+  FLOORS.forEach(function (f) {
+    f.rooms.forEach(function (r) {
+      r.items = sectionItems(r.id, r.steps);
+      SECTIONS.push({ id: r.id, name: r.name, items: r.items, room: true });
+    });
+  });
+  SECTIONS.push({ id: 'fin', name: UI.finish, items: sectionItems('fin', FINISH) });
+  var ALL = [];
+  var ROOM_ITEM = {};
+  SECTIONS.forEach(function (s) {
+    s.items.forEach(function (it) { ALL.push(it); if (s.room) ROOM_ITEM[it.id] = true; });
+  });
+  var SEND_ID = 'fin-' + (FINISH.length - 1);
+
+  // ---------- Storage ----------
+  var K_STATE = 'cleaning.state.v2', K_PHONE = 'cleaning.phone', K_LANG = 'cleaning.lang';
+  function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function store(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+
+  function freshState() {
+    return { checks: {}, start: null, end: null, open: {}, supplies: {}, other: '', notes: '' };
+  }
+  var state = freshState();
+  try {
+    var saved = JSON.parse(load(K_STATE) || 'null');
+    if (saved && typeof saved === 'object') {
+      Object.keys(state).forEach(function (k) { if (saved[k] != null) state[k] = saved[k]; });
+    }
+  } catch (e) {}
+  var phone = load(K_PHONE) || '';
+  var lang = load(K_LANG) === 'en' ? 'en' : 'ru';
+
+  function save() { store(K_STATE, JSON.stringify(state)); }
+
+  // ---------- Helpers ----------
+  function tr(o) { return o[lang]; }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function icon(i) { return SVG[i] || esc(i || ''); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function hm(ms) { var d = new Date(ms); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function dmy(ms) { var d = new Date(ms); return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear(); }
+  function dur(min) { return Math.floor(min / 60) + ':' + pad(min % 60); }
+  function elapsedMin() {
+    if (!state.start) return 0;
+    return Math.max(0, Math.floor(((state.end || Date.now()) - state.start) / 60000));
+  }
+  function doneCount(items) {
+    var n = 0;
+    items.forEach(function (it) { if (state.checks[it.id]) n++; });
+    return n;
+  }
+  function supply(id) {
+    if (!state.supplies[id]) state.supplies[id] = { on: false, qty: '' };
+    return state.supplies[id];
+  }
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- Render ----------
+  function stepHtml(it) {
+    var s = it.step;
+    var h = '<label class="step' + (s.critical ? ' critical' : '') + '"><input type="checkbox" data-id="' + it.id + '"' +
+      (state.checks[it.id] ? ' checked' : '') + '><span class="body"><span class="head">' +
+      '<span class="e" aria-hidden="true">' + icon(s.t.icon) + '</span>' +
+      '<span class="t">' + esc(tr(s.t)) + '</span>' +
+      (s.gl ? '<span class="badge' + (s.gl.attn ? ' attn' : '') + '">' + s.gl.icon + ' ' + esc(tr(s.gl.t)) + '</span>' : '') +
+      '</span>';
+    if (s.subs) {
+      h += '<span class="subs">' + s.subs.map(function (x, i) {
+        return '<span class="sub' + (x.attn ? ' attn' : '') + '">' + (s.seq && i ? '<span class="ar">→</span>' : '') +
+          '<span class="e" aria-hidden="true">' + icon(x.icon) + '</span>' + esc(tr(x)) + '</span>';
+      }).join('') + '</span>';
+    }
+    return h + '</span></label>';
+  }
+  function chipsHtml(arr) {
+    return '<div class="flow">' + arr.map(function (t, i) {
+      return '<span class="chip"><span class="n">' + (i + 1) + '</span><span class="e">' + icon(t.icon) + '</span>' + esc(tr(t)) + '</span>';
+    }).join('') + '</div>';
+  }
+
+  function render() {
+    document.documentElement.lang = lang;
+    document.title = tr(UI.docTitle);
+    $('title').textContent = tr(UI.title);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-lang]'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-lang') === lang);
+    });
+
+    var h = '';
+    // Preparation
+    h += '<h2>' + esc(tr(UI.prep)) + '</h2>';
+    h += '<div class="box plain">' + SECTIONS[0].items.map(stepHtml).join('') + '</div>';
+
+    h += '<div class="box inverse"><h3>' + esc(tr(UI.forbidden)) + '</h3>';
+    FORBIDDEN.forEach(function (r) {
+      h += '<div class="rule"><span class="big' + (r.no ? ' no' : '') + '" aria-hidden="true">' + r.big + '</span><span>' + esc(tr(r.t)) + '</span></div>';
+    });
+    h += '</div>';
+
+    h += '<div class="box"><h3>' + esc(tr(UI.order)) + '</h3>' +
+      chipsHtml(ROUTE) + chipsHtml(ROOM_STEPS) +
+      '<div class="legend">' + GLOVE_LEGEND.map(function (g) {
+        return '<span' + (g.attn ? ' class="attn"' : '') + '><b>' + g.icon + '</b> ' + esc(tr(g.t)) + '</span>';
+      }).join('') + '</div>' +
+      '<div class="norm">⏱ ' + esc(tr(UI.norm)) + '</div></div>';
+    h += '<button type="button" class="btn primary" id="startBtn"></button>';
+
+    // Rooms
+    h += '<h2 id="rooms">' + esc(tr(UI.rooms)) + '</h2>';
+    FLOORS.forEach(function (f) {
+      h += '<h2 class="floor">' + esc(tr(f.name)) + '</h2>';
+      f.rooms.forEach(function (r) {
+        h += '<section class="card' + (state.open[r.id] ? ' open' : '') + '" data-room="' + r.id + '">' +
+          '<button type="button" class="card-head" data-toggle="' + r.id + '" aria-expanded="' + !!state.open[r.id] + '">' +
+          '<span class="room-ico" aria-hidden="true">' + r.icon + '</span>' +
+          '<span class="card-title"><b>' + esc(tr(r.name)) + '</b>' + (r.sub ? '<small aria-hidden="true">' + r.sub + '</small>' : '') + '</span>' +
+          '<span class="count" data-count="' + r.id + '"></span><span class="chev"></span></button>' +
+          '<div class="card-body">' + r.items.map(stepHtml).join('') + '</div></section>';
+      });
+    });
+
+    // Supplies
+    h += '<h2>' + esc(tr(UI.supplies)) + '</h2><div class="box plain">';
+    SUPPLY_GROUPS.forEach(function (g) {
+      h += '<div class="group">' + esc(tr(g.t)) + '</div>';
+      g.items.forEach(function (s) {
+        var st = supply(s[0]);
+        h += '<div class="supply" data-supply-row="' + s[0] + '"><label><input type="checkbox" data-sup="' + s[0] + '"' +
+          (st.on ? ' checked' : '') + '><span class="ico" aria-hidden="true">' + icon(s[1].icon) + '</span>' +
+          '<span class="txt">' + esc(tr(s[1])) + '</span></label>' +
+          '<input class="qty" type="text" inputmode="numeric" data-qty="' + s[0] + '" placeholder="' + esc(tr(UI.qty)) + '" aria-label="' + esc(tr(UI.qty)) + '"></div>';
+      });
+    });
+    h += '<label class="lbl" for="other">' + esc(tr(UI.other)) + '</label>' +
+      '<textarea id="other" placeholder="' + esc(tr(UI.otherPh)) + '"></textarea></div>';
+
+    // Notes
+    h += '<h2>' + esc(tr(UI.notes)) + '</h2><div class="box plain"><textarea id="notes" placeholder="' + esc(tr(UI.notesPh)) + '"></textarea></div>';
+
+    // Finish
+    h += '<h2>' + esc(tr(UI.finish)) + '</h2>';
+    h += '<div class="box plain">' + SECTIONS[SECTIONS.length - 1].items.map(stepHtml).join('') + '</div>';
+    h += '<div class="box plain"><label class="lbl" for="phone">' + esc(tr(UI.phone)) + '</label>' +
+      '<input class="field" id="phone" type="tel" inputmode="tel" autocomplete="off" placeholder="' + esc(tr(UI.phonePh)) + '">' +
+      '<p class="hint">' + esc(tr(UI.phoneHint)) + '</p>' +
+      '<button type="button" class="btn primary" id="sendBtn">' + esc(tr(UI.send)) + '</button>' +
+      '<div class="note-video">🎥 ' + esc(tr(UI.video)) + '</div>' +
+      '<button type="button" class="btn" id="copyBtn">' + esc(tr(UI.copy)) + '</button></div>';
+    h += '<button type="button" class="btn quiet" id="resetBtn">↺ ' + esc(tr(UI.reset)) + '</button>';
+
+    $('app').innerHTML = h;
+
+    // Free-text values are set as properties, never as HTML.
+    SUPPLIES.forEach(function (s) { document.querySelector('[data-qty="' + s[0] + '"]').value = supply(s[0]).qty || ''; });
+    $('other').value = state.other || '';
+    $('notes').value = state.notes || '';
+    $('phone').value = phone;
+
+    refresh();
+  }
+
+  function refresh() {
+    var done = doneCount(ALL), total = ALL.length;
+    var pct = total ? Math.floor(done * 100 / total) : 0;
+    $('bar').style.width = pct + '%';
+    $('progressText').innerHTML = '<b>' + pct + '% · ' + done + '/' + total + '</b>';
+
+    SECTIONS.forEach(function (s) {
+      if (!s.room) return;
+      var d = doneCount(s.items);
+      var el = document.querySelector('[data-count="' + s.id + '"]');
+      if (el) el.textContent = d + '/' + s.items.length;
+      var card = document.querySelector('[data-room="' + s.id + '"]');
+      if (card) card.classList.toggle('done', d === s.items.length);
+    });
+
+    SUPPLIES.forEach(function (s) {
+      var row = document.querySelector('[data-supply-row="' + s[0] + '"]');
+      if (row) row.classList.toggle('low', !!supply(s[0]).on);
+    });
+
+    var sb = $('startBtn');
+    if (sb) {
+      sb.disabled = !!state.start;
+      sb.textContent = state.start ? '⏱ ' + tr(UI.started) + hm(state.start) : '▶ ' + tr(UI.start);
+    }
+    tick();
+  }
+
+  function tick() {
+    var el = $('timer');
+    el.classList.remove('warn', 'over');
+    if (!state.start) { el.textContent = tr(UI.notStarted); return; }
+    var m = elapsedMin();
+    var txt = dur(m) + ' ' + tr(UI.of) + ' ' + dur(NORM_MIN);
+    if (m >= NORM_MIN) { el.classList.add('over'); txt += ' · ' + tr(UI.over); }
+    else if (m >= WARN_MIN) { el.classList.add('warn'); }
+    el.textContent = '⏱ ' + txt;
+  }
+
+  function startTimer() {
+    if (!state.start) { state.start = Date.now(); state.end = null; }
+  }
+
+  // ---------- Report (always Russian) ----------
+  function buildReport() {
+    var now = Date.now();
+    var L = [];
+    L.push('🧹 Отчёт об уборке — ' + dmy(state.start || now));
+    if (state.start) {
+      var m = elapsedMin();
+      L.push('Начало: ' + hm(state.start) + ', окончание: ' + hm(state.end || now));
+      L.push('Длительность: ' + dur(m) + ' (норма ' + dur(NORM_MIN) + ')' + (m > NORM_MIN ? ' ⚠️ превышение' : ''));
+    } else {
+      L.push('Таймер не запускался');
+    }
+    var done = doneCount(ALL), total = ALL.length;
+    L.push('Выполнено: ' + Math.floor(done * 100 / total) + '% (' + done + ' из ' + total + ')');
+    L.push('');
+
+    if (done === total) {
+      L.push('✅ Все пункты выполнены');
+    } else {
+      L.push('❗ Не выполнено (' + (total - done) + '):');
+      SECTIONS.forEach(function (s) {
+        var left = s.items.filter(function (it) { return !state.checks[it.id]; });
+        if (!left.length) return;
+        L.push('• ' + s.name.ru + ':');
+        left.forEach(function (it) { L.push('   – ' + it.step.t.ru); });
+      });
+    }
+    L.push('');
+
+    var notes = (state.notes || '').trim();
+    L.push('📝 Замечания:');
+    L.push(notes || 'нет');
+    L.push('');
+
+    var buy = [];
+    SUPPLIES.forEach(function (s) {
+      var st = supply(s[0]);
+      if (!st.on) return;
+      var q = (st.qty || '').trim();
+      if (/^\d+([.,]\d+)?$/.test(q)) q += ' шт';
+      buy.push('   – ' + s[1].ru + (q ? ' — ' + q : ''));
+    });
+    (state.other || '').split('\n').forEach(function (line) {
+      line = line.trim();
+      if (line) buy.push('   – ' + line);
+    });
+    if (buy.length) {
+      L.push('🛒 Заявка на закуп:');
+      L = L.concat(buy);
+    } else {
+      L.push('🛒 Закуп не требуется');
+    }
+    L.push('');
+    L.push('🎥 Видео — следующим сообщением.');
+    return L.join('\n');
+  }
+
+  // ---------- Actions ----------
+  var toastTimer;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+
+  function copyText(text) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      toast(tr(ok ? UI.copied : UI.copyFail));
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { toast(tr(UI.copied)); }, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function sendReport() {
+    state.checks[SEND_ID] = true;
+    var box = document.querySelector('[data-id="' + SEND_ID + '"]');
+    if (box) box.checked = true;
+    if (state.start) state.end = Date.now();
+    save();
+    refresh();
+    var num = phone.replace(/\D/g, '');
+    var url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(buildReport());
+    var w = window.open(url, '_blank');
+    if (!w) window.location.href = url;
+  }
+
+  function resetAll() {
+    if (!window.confirm(tr(UI.resetConfirm))) return;
+    state = freshState();
+    save();
+    render();
+    window.scrollTo(0, 0);
+    toast(tr(UI.resetDone));
+  }
+
+  // ---------- Events ----------
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    var id = el.getAttribute('data-id');
+    if (id) {
+      if (el.checked) state.checks[id] = true; else delete state.checks[id];
+      if (el.checked && ROOM_ITEM[id]) startTimer();
+      save(); refresh();
+      return;
+    }
+    var sup = el.getAttribute('data-sup');
+    if (sup) {
+      var st = supply(sup);
+      st.on = el.checked;
+      if (!el.checked) {
+        st.qty = '';
+        document.querySelector('[data-qty="' + sup + '"]').value = '';
+      }
+      save(); refresh();
+    }
+  });
+
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    var q = el.getAttribute('data-qty');
+    if (q) {
+      var st = supply(q);
+      st.qty = el.value;
+      if (el.value.trim()) {
+        st.on = true;
+        document.querySelector('[data-sup="' + q + '"]').checked = true;
+      }
+      save(); refresh();
+      return;
+    }
+    if (el.id === 'other') { state.other = el.value; save(); }
+    else if (el.id === 'notes') { state.notes = el.value; save(); }
+    else if (el.id === 'phone') { phone = el.value; store(K_PHONE, phone); }
+  });
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('button') : null;
+    if (!el) return;
+    var l = el.getAttribute('data-lang');
+    if (l) {
+      if (l !== lang) { lang = l; store(K_LANG, lang); render(); }
+      return;
+    }
+    var tg = el.getAttribute('data-toggle');
+    if (tg) {
+      if (state.open[tg]) delete state.open[tg]; else state.open[tg] = true;
+      var card = el.parentNode;
+      card.classList.toggle('open', !!state.open[tg]);
+      el.setAttribute('aria-expanded', String(!!state.open[tg]));
+      save();
+      return;
+    }
+    switch (el.id) {
+      case 'startBtn':
+        startTimer(); save(); refresh();
+        var r = $('rooms');
+        if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        break;
+      case 'sendBtn': sendReport(); break;
+      case 'copyBtn': copyText(buildReport()); break;
+      case 'resetBtn': resetAll(); break;
+    }
+  });
+
+  // Keep the section heading visible below the sticky header when scrolling to it.
+  function headerOffset() {
+    var h = document.querySelector('header').offsetHeight + 8;
+    document.documentElement.style.scrollPaddingTop = h + 'px';
+  }
+  window.addEventListener('resize', headerOffset);
+
+  render();
+  headerOffset();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
