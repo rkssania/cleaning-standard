@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Уборка">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Стандарт уборки</title>
 <style>
   :root {
@@ -51,7 +59,20 @@
   .timer.warn { border-color: var(--ink); }
   .timer.over { background: var(--ink); color: #fff; }
 
-  main { padding-top: 8px; padding-bottom: 48px; }
+  main { padding-top: 8px; padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
+
+  /* "Add to Home Screen" hint, shown only in iPhone Safari before installing */
+  .install {
+    display: flex; align-items: flex-start; gap: 12px;
+    border: 1px solid var(--ink); border-radius: var(--radius); padding: 12px 14px; margin: 12px 0 0;
+  }
+  .install .txt { flex: 1; font-size: 15px; }
+  .install b { display: block; font-size: 16px; margin-bottom: 2px; }
+  .install svg { width: 18px; height: 18px; vertical-align: -3px; }
+  .install button {
+    border: 0; background: transparent; font: inherit; font-size: 22px; line-height: 1;
+    width: 40px; height: 40px; margin: -8px -8px 0 0; cursor: pointer; color: var(--ink);
+  }
   h2 {
     font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
     margin: 32px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
@@ -280,8 +301,16 @@
     notStarted: T('Таймер не запущен', 'Timer not started'),
     of: T('из', 'of'),
     over: T('Превышена норма', 'Time limit exceeded'),
-    norm: T('Норма: 3 часа на весь дом', 'Limit: 3 hours for the whole house')
+    norm: T('Норма: 3 часа на весь дом', 'Limit: 3 hours for the whole house'),
+    installTitle: T('Установите как приложение', 'Install as an app'),
+    installHow: T('Нажмите {share} «Поделиться» внизу Safari → «На экран «Домой»».',
+                  'Tap {share} Share at the bottom of Safari → “Add to Home Screen”.'),
+    close: T('Закрыть', 'Close')
   };
+
+  // iOS share icon (square with an up arrow), used in the install hint.
+  var SHARE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share">' +
+    '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>';
 
   // A step is one checkbox for one finished stage of work.
   // subs: what the stage includes (shown as small icons); seq: subs are done in this exact order;
@@ -494,7 +523,7 @@
   var SEND_ID = 'fin-' + (FINISH.length - 1);
 
   // ---------- Storage ----------
-  var K_STATE = 'cleaning.state.v2', K_PHONE = 'cleaning.phone', K_LANG = 'cleaning.lang';
+  var K_STATE = 'cleaning.state.v2', K_PHONE = 'cleaning.phone', K_LANG = 'cleaning.lang', K_HINT = 'cleaning.installHintClosed';
   function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
   function store(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 
@@ -540,6 +569,15 @@
   }
   function $(id) { return document.getElementById(id); }
 
+  // Only iPhone/iPad Safari needs the manual "Add to Home Screen" hint.
+  function showInstallHint() {
+    var ua = navigator.userAgent;
+    var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var standalone = window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    return ios && !standalone && !load(K_HINT);
+  }
+
   // ---------- Render ----------
   function stepHtml(it) {
     var s = it.step;
@@ -572,6 +610,11 @@
     });
 
     var h = '';
+    if (showInstallHint()) {
+      h += '<div class="install" id="installHint"><span class="txt"><b>📲 ' + esc(tr(UI.installTitle)) + '</b>' +
+        esc(tr(UI.installHow)).replace('{share}', SHARE_SVG) + '</span>' +
+        '<button type="button" id="installClose" aria-label="' + esc(tr(UI.close)) + '">×</button></div>';
+    }
     // Preparation
     h += '<h2>' + esc(tr(UI.prep)) + '</h2>';
     h += '<div class="box plain">' + SECTIONS[0].items.map(stepHtml).join('') + '</div>';
@@ -863,6 +906,11 @@
       case 'sendBtn': sendReport(); break;
       case 'copyBtn': copyText(buildReport()); break;
       case 'resetBtn': resetAll(); break;
+      case 'installClose':
+        store(K_HINT, '1');
+        var hint = $('installHint');
+        if (hint) hint.parentNode.removeChild(hint);
+        break;
     }
   });
 
@@ -876,6 +924,13 @@
   render();
   headerOffset();
   setInterval(tick, 1000);
+
+  // The timer is based on the start time, so it is correct again as soon as the app returns from background.
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
+
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
 })();
 </script>
 </body>

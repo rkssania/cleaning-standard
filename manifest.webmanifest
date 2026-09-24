@@ -1,0 +1,17 @@
+{
+  "name": "Стандарт уборки таунхауса 210 м²",
+  "short_name": "Уборка",
+  "description": "Чек-лист уборки, таймер, заявка на закуп и отчёт в WhatsApp",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
