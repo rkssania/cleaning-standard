@@ -214,6 +214,8 @@
   .lbl { display: block; font-weight: 700; margin: 14px 0 6px; }
   .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
   .note-video { border-left: 4px solid var(--ink); padding: 8px 12px; margin: 8px 0; font-weight: 700; }
+  .vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+  .video-ready { font-weight: 700; margin: 4px 0 0; }
   .toast {
     position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
     background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 16px;
@@ -293,7 +295,14 @@
     copy: T('Скопировать текст отчёта', 'Copy report text'),
     copied: T('Текст отчёта скопирован', 'Report text copied'),
     copyFail: T('Не удалось скопировать', 'Could not copy'),
-    video: T('После отправки текста приложите короткое видео в тот же чат.', 'After sending the text, attach a short video in the same chat.'),
+    video: T('Сначала отправьте отчёт, затем видео в тот же чат.', 'Send the report first, then the video to the same chat.'),
+    recordVideo: T('Снять видео', 'Record video'),
+    retakeVideo: T('Переснять видео', 'Record again'),
+    videoReady: T('Видео готово', 'Video ready'),
+    shareVideo: T('Отправить видео в WhatsApp', 'Send video via WhatsApp'),
+    shareHint: T('В меню выберите WhatsApp и чат с хозяйкой.', 'In the menu choose WhatsApp and the owner\'s chat.'),
+    shareFail: T('Не получилось отправить отсюда. В WhatsApp нажмите «+» → Камера и снимите видео там.',
+                 'Could not share from here. In WhatsApp tap “+” → Camera and record it there.'),
     reset: T('Новая уборка', 'New cleaning'),
     resetConfirm: T('Начать новую уборку? Все отметки, таймер, заявка и замечания будут сброшены.',
                     'Start a new cleaning? All checks, the timer, purchase list and notes will be cleared.'),
@@ -671,9 +680,17 @@
     h += '<div class="box plain"><label class="lbl" for="phone">' + esc(tr(UI.phone)) + '</label>' +
       '<input class="field" id="phone" type="tel" inputmode="tel" autocomplete="off" placeholder="' + esc(tr(UI.phonePh)) + '">' +
       '<p class="hint">' + esc(tr(UI.phoneHint)) + '</p>' +
-      '<button type="button" class="btn primary" id="sendBtn">' + esc(tr(UI.send)) + '</button>' +
       '<div class="note-video">🎥 ' + esc(tr(UI.video)) + '</div>' +
-      '<button type="button" class="btn" id="copyBtn">' + esc(tr(UI.copy)) + '</button></div>';
+      '<button type="button" class="btn primary" id="sendBtn">1. ' + esc(tr(UI.send)) + '</button>' +
+      // Without the "capture" attribute iPhone offers both the camera and the photo library.
+      '<input type="file" id="videoInput" class="vh" accept="video/*" tabindex="-1">' +
+      '<label class="btn" for="videoInput" id="recordBtn">🎥 2. ' + esc(tr(videoFile ? UI.retakeVideo : UI.recordVideo)) + '</label>' +
+      '<div id="videoBlock"' + (videoFile ? '' : ' hidden') + '>' +
+        '<p class="video-ready" id="videoInfo">' + (videoFile ? videoLabel() : '') + '</p>' +
+        '<button type="button" class="btn primary" id="shareVideo">3. ' + esc(tr(UI.shareVideo)) + '</button>' +
+        '<p class="hint">' + esc(tr(UI.shareHint)) + '</p>' +
+      '</div>' +
+      '<button type="button" class="btn quiet" id="copyBtn">' + esc(tr(UI.copy)) + '</button></div>';
     h += '<button type="button" class="btn quiet" id="resetBtn">↺ ' + esc(tr(UI.reset)) + '</button>';
 
     $('app').innerHTML = h;
@@ -831,8 +848,43 @@
     if (!w) window.location.href = url;
   }
 
+  // The recorded video lives only in memory until it is shared; it is never stored.
+  var videoFile = null;
+  var VIDEO_ID = 'fin-1';
+
+  function videoLabel() {
+    var mb = videoFile.size / (1024 * 1024);
+    return '✓ ' + esc(tr(UI.videoReady)) + ' · ' + (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + ' MB';
+  }
+
+  function onVideoPicked(file) {
+    if (!file) return;
+    videoFile = file;
+    state.checks[VIDEO_ID] = true;
+    var box = document.querySelector('[data-id="' + VIDEO_ID + '"]');
+    if (box) box.checked = true;
+    save();
+    refresh();
+    $('videoInfo').innerHTML = videoLabel();
+    $('videoBlock').hidden = false;
+    $('recordBtn').textContent = '🎥 2. ' + tr(UI.retakeVideo);
+  }
+
+  function shareVideo() {
+    if (!videoFile) return;
+    var data = { files: [videoFile] };
+    if (navigator.canShare && navigator.canShare(data)) {
+      navigator.share(data).catch(function (err) {
+        if (err && err.name !== 'AbortError') toast(tr(UI.shareFail));
+      });
+    } else {
+      toast(tr(UI.shareFail));
+    }
+  }
+
   function resetAll() {
     if (!window.confirm(tr(UI.resetConfirm))) return;
+    videoFile = null;
     state = freshState();
     save();
     render();
@@ -843,6 +895,11 @@
   // ---------- Events ----------
   document.addEventListener('change', function (e) {
     var el = e.target;
+    if (el.id === 'videoInput') {
+      onVideoPicked(el.files && el.files[0]);
+      el.value = '';
+      return;
+    }
     var id = el.getAttribute('data-id');
     if (id) {
       if (el.checked) state.checks[id] = true; else delete state.checks[id];
@@ -906,6 +963,7 @@
       case 'sendBtn': sendReport(); break;
       case 'copyBtn': copyText(buildReport()); break;
       case 'resetBtn': resetAll(); break;
+      case 'shareVideo': shareVideo(); break;
       case 'installClose':
         store(K_HINT, '1');
         var hint = $('installHint');
