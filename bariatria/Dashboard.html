@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles'); ?>
+  <style>
+    .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .top h1 { margin-bottom: 2px; }
+    .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .kpi .v { font-size: 32px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .kpi .l { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+    .kpi .l .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .toolbar input[type=search] { flex: 1 1 260px; min-height: 46px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+    .filters .chip span { min-height: 40px; font-size: 15px; padding: 6px 12px; }
+    .filters .chip em { font-style: normal; color: var(--muted); margin-left: 6px; font-variant-numeric: tabular-nums; }
+
+    table.list { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table.list th, table.list td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    table.list th { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; background: var(--surface-2); }
+    table.list tbody tr { cursor: pointer; }
+    table.list tbody tr:hover { background: var(--surface-2); }
+    table.list tbody tr:last-child td { border-bottom: 0; }
+    table.list .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.list .name { font-weight: 600; }
+    table.list .name button { all: unset; cursor: pointer; }
+    table.list .name button:focus-visible { outline: 3px solid var(--focus); }
+    .empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+
+    @media (max-width: 760px) {
+      table.list, table.list tbody, table.list tr, table.list td { display: block; }
+      table.list thead { display: none; }
+      table.list { border: 0; background: transparent; }
+      table.list tbody tr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; padding: 8px 0; }
+      table.list td { border: 0; padding: 4px 16px; }
+      table.list td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-size: 14px; }
+      table.list td.name { font-size: 18px; padding-top: 8px; }
+    }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .badge i { font-style: normal; }
+    .st-ok { background: var(--ok-soft); color: var(--ok); }
+    .st-soon { background: var(--warn-soft); color: var(--warn); }
+    .st-overdue { background: var(--bad-soft); color: var(--bad); }
+    .st-none { background: var(--none-soft); color: var(--none); }
+    .sub { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+    .links { display: grid; gap: 10px; }
+    .linkrow { display: flex; gap: 8px; }
+    .linkrow input { flex: 1; min-height: 44px; font-size: 14px; color: var(--ink-2); }
+
+    /* Карточка пациента */
+    .sheet-bg { position: fixed; inset: 0; background: rgba(8, 12, 16, .5); z-index: 10; }
+    .sheet {
+      position: fixed; z-index: 11; top: 0; right: 0; bottom: 0;
+      width: min(760px, 100%); overflow-y: auto; background: var(--bg);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, .2); padding: 0 0 40px;
+    }
+    .sheet-head { position: sticky; top: 0; z-index: 2; display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .sheet-head h2 { margin: 0; font-size: 20px; }
+    .sheet-body { padding: 16px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--ink-2); font-size: 15px; margin-bottom: 12px; }
+    .meta a { color: var(--accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    @media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+    .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+    .tile .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .tile .v small { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+    .tile .l { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    .chart { position: relative; }
+    .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .chart .axis { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .chart .grid { stroke: var(--border); stroke-width: 1; }
+    .chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .chart .pt { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+    .chart .pt.base { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+    .chart .cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+    .chart .hl { fill: var(--accent); stroke: var(--surface); stroke-width: 3; }
+    .chart .lbl { fill: var(--ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .tip {
+      position: absolute; pointer-events: none; background: var(--ink); color: var(--bg);
+      border-radius: 8px; padding: 6px 10px; font-size: 13px; line-height: 1.35; white-space: nowrap;
+      transform: translate(-50%, calc(-100% - 12px));
+    }
+
+    dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; }
+    dl.kv dt { color: var(--muted); }
+    dl.kv dd { margin: 0; }
+    @media (max-width: 480px) { dl.kv { grid-template-columns: 1fr; gap: 0; } dl.kv dd { margin-bottom: 8px; } }
+    .low { color: var(--warn); font-weight: 600; }
+
+    .scroll-x { overflow-x: auto; }
+    table.hist { width: 100%; border-collapse: collapse; font-size: 15px; }
+    table.hist th, table.hist td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    table.hist th { color: var(--muted); font-weight: 600; font-size: 13px; }
+    table.hist td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    body.locked { overflow: hidden; }
+  </style>
+</head>
+<body>
+  <main class="wrap wide">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <?= appTitle ?>
+    </div>
+    <div class="top">
+      <div>
+        <h1>Панель врача</h1>
+        <div class="muted small" id="asof"></div>
+      </div>
+      <div class="top-actions">
+        <a class="btn small" id="refresh">Обновить</a>
+        <button type="button" class="btn ghost small" id="toggleLinks" aria-expanded="false">Ссылки для пациентов</button>
+      </div>
+    </div>
+
+    <section class="card" id="linksCard" hidden>
+      <h2>Ссылки для пациентов</h2>
+      <div class="links">
+        <label><span class="label small">Первичная анкета (один раз)</span>
+          <span class="linkrow"><input type="text" readonly id="linkIntake"><button type="button" class="btn ghost small" data-copy="linkIntake">Копировать</button></span>
+        </label>
+        <label><span class="label small">Ежемесячный контроль</span>
+          <span class="linkrow"><input type="text" readonly id="linkCheckin"><button type="button" class="btn ghost small" data-copy="linkCheckin">Копировать</button></span>
+        </label>
+      </div>
+    </section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Поиск по ФИО или телефону" aria-label="Поиск по ФИО или телефону">
+      <div class="filters" id="filters" role="radiogroup" aria-label="Фильтр по статусу"></div>
+    </div>
+
+    <table class="list" id="list">
+      <thead>
+        <tr><th>ФИО</th><th>Телефон</th><th>Операция</th><th>Вес, кг</th><th>Сброшено</th><th>Контроль</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <section class="card" id="orphansCard" style="margin-top:20px" hidden>
+      <h2>Записи контроля без анкеты</h2>
+      <p class="muted small" style="margin-top:-6px">Телефон не совпал ни с одной первичной анкетой. Проверьте номер в листе «Контроль» или «Пациенты» — после исправления запись привяжется автоматически.</p>
+      <div class="scroll-x"><table class="hist" id="orphans"></table></div>
+    </section>
+  </main>
+
+  <div class="sheet-bg" id="sheetBg" hidden></div>
+  <aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+    <div class="sheet-head">
+      <h2 id="sheetTitle"></h2>
+      <button type="button" class="btn ghost small" id="sheetClose" aria-label="Закрыть">✕ Закрыть</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </aside>
+
+  <script>
+    var DATA = <?!= jsonForScript_(data) ?>;
+    var BASE = <?!= jsonForScript_(baseUrl) ?>;
+    var KEY = <?!= jsonForScript_(key) ?>;
+  </script>
+  <script>
+    (function () {
+      var STATUS = {
+        overdue: { label: 'Просрочен', icon: '▲', order: 0 },
+        none:    { label: 'Нет записей', icon: '○', order: 1 },
+        soon:    { label: 'Скоро', icon: '◐', order: 2 },
+        ok:      { label: 'Норма', icon: '●', order: 3 }
+      };
+      // Ориентиры для подсветки низких значений (можно поправить под свою практику)
+      var LAB_LOW = { hb: { f: 120, m: 130 }, ferritin: 30, vitD: 30, b12: 200 };
+
+      var patients = DATA.patients;
+      var state = { q: '', filter: 'all', open: null };
+
+      /* ───── Форматирование ───── */
+      function esc(s) {
+        return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+      function fmt(n, digits) {
+        if (n === null || n === undefined || n === '') return '—';
+        return Number(n).toLocaleString('ru-RU', { maximumFractionDigits: digits === undefined ? 1 : digits });
+      }
+      function fdate(iso) {
+        if (!iso) return '—';
+        var p = iso.slice(0, 10).split('-');
+        return p[2] + '.' + p[1] + '.' + p[0];
+      }
+      function dayNum(iso) {
+        var p = iso.slice(0, 10).split('-');
+        return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
+      }
+      function daysWord(n) {
+        var a = Math.abs(n) % 100, b = a % 10;
+        if (a > 10 && a < 20) return 'дней';
+        if (b === 1) return 'день';
+        if (b >= 2 && b <= 4) return 'дня';
+        return 'дней';
+      }
+      function ago(n) {
+        if (n === null) return '';
+        if (n <= 0) return 'сегодня';
+        if (n === 1) return 'вчера';
+        return n + ' ' + daysWord(n) + ' назад';
+      }
+      function badge(status) {
+        var s = STATUS[status];
+        return '<span class="badge st-' + status + '"><i aria-hidden="true">' + s.icon + '</i>' + s.label + '</span>';
+      }
+      function age(iso) {
+        if (!iso) return null;
+        var b = iso.split('-'), t = DATA.today.split('-');
+        var a = +t[0] - +b[0];
+        if (+t[1] < +b[1] || (+t[1] === +b[1] && +t[2] < +b[2])) a--;
+        return a;
+      }
+      function bmi(w, h) { return (w && h) ? w / Math.pow(h / 100, 2) : null; }
+
+      /* ───── Шапка ───── */
+      document.getElementById('asof').textContent = 'Данные на ' + fdate(DATA.today) +
+        ' · «скоро» — больше ' + DATA.config.soonDays + ' дн., «просрочен» — больше ' + DATA.config.overdueDays + ' дн. с последней записи';
+      document.getElementById('refresh').href = BASE + '?page=dashboard&key=' + encodeURIComponent(KEY);
+      document.getElementById('linkIntake').value = BASE;
+      document.getElementById('linkCheckin').value = BASE + '?page=checkin';
+      document.getElementById('toggleLinks').addEventListener('click', function () {
+        var card = document.getElementById('linksCard');
+        card.hidden = !card.hidden;
+        this.setAttribute('aria-expanded', String(!card.hidden));
+      });
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-copy]');
+        if (!btn) return;
+        var input = document.getElementById(btn.getAttribute('data-copy'));
+        copyText(input.value, input, btn);
+      });
+      function copyText(text, input, btn) {
+        function ok() { var t = btn.textContent; btn.textContent = 'Скопировано'; setTimeout(function () { btn.textContent = t; }, 1500); }
+        function fallback() {
+          if (input) { input.focus(); input.select(); }
+          try { if (document.execCommand('copy')) ok(); } catch (e) {}
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok, fallback);
+        } else fallback();
+      }
+
+      /* ───── Сводка ───── */
+      var t = DATA.totals;
+      document.getElementById('kpis').innerHTML = [
+        [t.patients, 'Всего пациентов', ''],
+        [t.checkins, 'Записей контроля', ''],
+        [t.overdue, 'Просрочили контроль (&gt;' + DATA.config.overdueDays + ' дн.)', 'var(--bad)'],
+        [t.never, 'Ни разу не отмечались', 'var(--none)']
+      ].map(function (k) {
+        return '<div class="kpi"><div class="v">' + k[0] + '</div><div class="l">' +
+          (k[2] ? '<span class="dot" style="background:' + k[2] + '"></span>' : '') + k[1] + '</div></div>';
+      }).join('');
+
+      /* ───── Фильтры и список ───── */
+      var counts = { all: patients.length, overdue: 0, none: 0, soon: 0, ok: 0 };
+      patients.forEach(function (p) { counts[p.status]++; });
+      var filterDefs = [['all', 'Все'], ['overdue', 'Просрочен'], ['soon', 'Скоро'], ['ok', 'Норма'], ['none', 'Нет записей']];
+      document.getElementById('filters').innerHTML = filterDefs.map(function (f) {
+        return '<label class="chip"><input type="radio" name="filter" value="' + f[0] + '"' + (f[0] === 'all' ? ' checked' : '') + '>' +
+          '<span>' + f[1] + '<em>' + counts[f[0]] + '</em></span></label>';
+      }).join('');
+      document.getElementById('filters').addEventListener('change', function (e) {
+        state.filter = e.target.value;
+        renderList();
+      });
+      document.getElementById('q').addEventListener('input', function () {
+        state.q = this.value.trim().toLowerCase();
+        renderList();
+      });
+
+      patients.sort(function (a, b) {
+        var d = STATUS[a.status].order - STATUS[b.status].order;
+        if (d) return d;
+        if (a.status === 'overdue' || a.status === 'soon') return (b.daysSince || 0) - (a.daysSince || 0);
+        return a.name.localeCompare(b.name, 'ru');
+      });
+
+      function matches(p) {
+        if (state.filter !== 'all' && p.status !== state.filter) return false;
+        if (!state.q) return true;
+        var qDigits = state.q.replace(/\D/g, '');
+        if (p.name.toLowerCase().indexOf(state.q) >= 0) return true;
+        if (qDigits.length >= 3 && (p.phoneNorm.indexOf(qDigits) >= 0 || p.phone.replace(/\D/g, '').indexOf(qDigits) >= 0)) return true;
+        return false;
+      }
+
+      function renderList() {
+        var rows = patients.filter(matches);
+        var tbody = document.querySelector('#list tbody');
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">' +
+            (patients.length ? 'Никого не найдено' : 'Пока нет ни одной анкеты. Отправьте пациентам ссылку на первичную анкету.') + '</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(function (p) {
+          var weight = fmt(p.baseWeight) + ' → ' + (p.currentWeight !== null ? fmt(p.currentWeight) : '—');
+          var lost = p.lost !== null ? (p.lost > 0 ? '−' : p.lost < 0 ? '+' : '') + fmt(Math.abs(p.lost)) + ' кг' : '—';
+          var pct = (p.lost !== null && p.baseWeight) ? fmt(p.lost / p.baseWeight * 100) + '%' : '';
+          var ctl = badge(p.status) + '<span class="sub">' +
+            (p.lastDate ? fdate(p.lastDate) + ' · ' + ago(p.daysSince) + ' · ' : '') +
+            p.checkins.length + '/' + DATA.config.followupMonths + '</span>';
+          return '<tr data-id="' + esc(p.id) + '">' +
+            '<td class="name"><button type="button">' + esc(p.name || 'Без имени') + '</button></td>' +
+            '<td class="num" data-l="Телефон">' + esc(p.phone) + '</td>' +
+            '<td data-l="Операция">' + esc(p.surgeryType || '—') + (p.surgeryDate ? '<span class="sub">' + fdate(p.surgeryDate) + '</span>' : '') + '</td>' +
+            '<td class="num" data-l="Вес">' + weight + '</td>' +
+            '<td class="num" data-l="Сброшено">' + lost + (pct ? '<span class="sub">' + pct + ' от начального</span>' : '') + '</td>' +
+            '<td data-l="Контроль">' + ctl + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+      document.querySelector('#list tbody').addEventListener('click', function (e) {
+        var tr = e.target.closest('tr[data-id]');
+        if (tr) openPatient(tr.getAttribute('data-id'));
+      });
+
+      /* ───── Записи без анкеты ───── */
+      if (DATA.orphans.length) {
+        document.getElementById('orphansCard').hidden = false;
+        document.getElementById('orphans').innerHTML =
+          '<thead><tr><th>Отправлено</th><th>ФИО</th><th>Телефон</th><th>Дата</th><th>Вес</th></tr></thead><tbody>' +
+          DATA.orphans.map(function (c) {
+            return '<tr><td class="num">' + fdate(c.ts) + '</td><td>' + esc(c.name) + '</td><td class="num">' + esc(c.phone) +
+              '</td><td class="num">' + fdate(c.date) + '</td><td class="num">' + fmt(c.weight) + '</td></tr>';
+          }).join('') + '</tbody>';
+      }
+
+      /* ───── Карточка пациента ───── */
+      var sheet = document.getElementById('sheet');
+      var sheetBg = document.getElementById('sheetBg');
+      var lastFocus = null;
+
+      function openPatient(id) {
+        var p = patients.filter(function (x) { return x.id === id; })[0];
+        if (!p) return;
+        state.open = p;
+        lastFocus = document.activeElement;
+        document.getElementById('sheetTitle').textContent = p.name || 'Без имени';
+        document.getElementById('sheetBody').innerHTML = patientHtml(p);
+        sheet.hidden = false;
+        sheetBg.hidden = false;
+        sheet.scrollTop = 0;
+        document.body.classList.add('locked');
+        drawChart(p);
+        document.getElementById('sheetClose').focus();
+      }
+      function closePatient() {
+        sheet.hidden = true;
+        sheetBg.hidden = true;
+        document.body.classList.remove('locked');
+        state.open = null;
+        if (lastFocus) lastFocus.focus();
+      }
+      document.getElementById('sheetClose').addEventListener('click', closePatient);
+      sheetBg.addEventListener('click', closePatient);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.open) closePatient(); });
+      window.addEventListener('resize', function () { if (state.open) drawChart(state.open); });
+
+      function reminderUrl(p) {
+        var first = (p.name || '').split(/\s+/)[1] || (p.name || '').split(/\s+/)[0] || '';
+        var text = 'Здравствуйте' + (first ? ', ' + first : '') + '! Напоминаю о ежемесячном контроле после операции. ' +
+          'Пожалуйста, взвесьтесь и заполните форму: ' + BASE + '?page=checkin';
+        return 'https://wa.me/' + p.phoneNorm + '?text=' + encodeURIComponent(text);
+      }
+
+      function labCell(value, low) {
+        if (value === null) return '—';
+        return low !== null && value < low ? '<span class="low">' + fmt(value) + ' ↓ ниже ориентира ' + fmt(low) + '</span>' : fmt(value);
+      }
+
+      function patientHtml(p) {
+        var h = p.height;
+        var cur = p.currentWeight;
+        var ideal = h ? 25 * Math.pow(h / 100, 2) : null;
+        var excess = (ideal !== null && p.baseWeight) ? p.baseWeight - ideal : null;
+        var ewl = (excess && excess > 0 && p.lost !== null) ? p.lost / excess * 100 : null;
+        var months = p.daysSinceSurgery !== null && p.daysSinceSurgery >= 0 ? Math.floor(p.daysSinceSurgery / 30.44) : null;
+        var yrs = age(p.birthDate);
+
+        var meta = [];
+        if (p.phone) meta.push('<a href="tel:+' + esc(p.phoneNorm) + '">' + esc(p.phone) + '</a>');
+        if (p.surgeryType || p.surgeryDate) meta.push(esc(p.surgeryType || 'Операция') + (p.surgeryDate ? ' · ' + fdate(p.surgeryDate) : '') + (months !== null ? ' · ' + months + ' мес. назад' : ''));
+        if (p.sex) meta.push(esc(p.sex));
+        if (yrs !== null) meta.push(yrs + ' лет');
+        if (h) meta.push('рост ' + fmt(h, 0) + ' см');
+        if (p.email) meta.push('<a href="mailto:' + esc(p.email) + '">' + esc(p.email) + '</a>');
+
+        var tiles = [
+          [fmt(p.baseWeight), 'кг', 'Вес до операции'],
+          [cur !== null ? fmt(cur) : '—', cur !== null ? 'кг' : '', 'Текущий вес'],
+          [p.lost !== null ? fmt(p.lost) : '—', p.lost !== null ? 'кг' + (p.baseWeight ? ' · ' + fmt(p.lost / p.baseWeight * 100) + '%' : '') : '', 'Сброшено'],
+          [ewl !== null ? fmt(ewl, 0) : '—', ewl !== null ? '%' : '', '%EWL (потеря избыточного веса)'],
+          [h && (cur || p.baseWeight) ? fmt(bmi(cur || p.baseWeight, h)) : '—', h && p.baseWeight ? 'было ' + fmt(bmi(p.baseWeight, h)) : '', 'ИМТ сейчас'],
+          [p.checkins.length + '/' + DATA.config.followupMonths, '', 'Контролей · ' + STATUS[p.status].label.toLowerCase()]
+        ].map(function (x) {
+          return '<div class="tile"><div class="v">' + x[0] + (x[1] ? ' <small>' + x[1] + '</small>' : '') + '</div><div class="l">' + x[2] + '</div></div>';
+        }).join('');
+
+        var html = '<div class="meta">' + meta.join('<span aria-hidden="true">·</span>') + '</div>';
+        html += '<div class="actions">' +
+          (p.phoneNorm ? '<a class="btn small" href="' + esc(reminderUrl(p)) + '" target="_blank" rel="noopener">Напомнить в WhatsApp</a>' : '') +
+          badge(p.status) + (p.lastDate ? '<span class="muted small" style="align-self:center">последняя запись ' + ago(p.daysSince) + '</span>' : '') +
+          '</div>';
+        html += '<div class="tiles">' + tiles + '</div>';
+        if (p.diseases) html += '<section class="card"><h3>Сопутствующие заболевания</h3><div>' + esc(p.diseases) + '</div></section>';
+
+        html += '<section class="card"><h3>Динамика веса, кг</h3>' +
+          '<div class="chart" id="chart"></div>' +
+          '<p class="muted small" style="margin:8px 0 0">○ — вес до операции, ● — записи контроля. Наведите или коснитесь графика, чтобы увидеть значения.</p></section>';
+
+        var last = p.checkins[p.checkins.length - 1];
+        if (last) {
+          var hbLow = p.sex === 'Мужской' ? LAB_LOW.hb.m : LAB_LOW.hb.f;
+          var rows = [
+            ['Дата взвешивания', fdate(last.date)],
+            ['Отправлено', fdate(last.ts) + (last.ts.length > 10 ? ' ' + esc(last.ts.slice(11, 16)) : '')],
+            ['Вес', fmt(last.weight) + ' кг'],
+            ['Талия', last.waist !== null ? fmt(last.waist) + ' см' : '—'],
+            ['Самочувствие', last.wellbeing !== null ? fmt(last.wellbeing, 0) + ' из 5' : '—'],
+            ['Жалобы', esc(last.complaints || '—')],
+            ['Вода', esc(last.water || '—')],
+            ['Белок', esc(last.protein || '—')],
+            ['Активность', esc(last.activity || '—')],
+            ['Витамины', esc(last.vitamins || '—')],
+            ['Гемоглобин, г/л', labCell(last.hb, hbLow)],
+            ['Ферритин, нг/мл', labCell(last.ferritin, LAB_LOW.ferritin)],
+            ['Витамин D, нг/мл', labCell(last.vitD, LAB_LOW.vitD)],
+            ['Витамин B12, пг/мл', labCell(last.b12, LAB_LOW.b12)],
+            ['Комментарий', esc(last.comment || '—')]
+          ];
+          html += '<section class="card"><h3>Последняя запись контроля</h3><dl class="kv">' +
+            rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl></section>';
+
+          var prev = p.baseWeight;
+          var hist = p.checkins.map(function (c) {
+            var delta = (c.weight !== null && prev !== null) ? c.weight - prev : null;
+            if (c.weight !== null) prev = c.weight;
+            return '<tr><td class="num">' + fdate(c.date) + '</td><td class="num">' + fmt(c.weight) + '</td>' +
+              '<td class="num">' + (delta === null ? '—' : (delta > 0 ? '+' : delta < 0 ? '−' : '') + fmt(Math.abs(delta))) + '</td>' +
+              '<td class="num">' + fmt(c.waist) + '</td><td class="num">' + (c.wellbeing !== null ? fmt(c.wellbeing, 0) : '—') + '</td>' +
+              '<td>' + esc(c.complaints || '—') + '</td></tr>';
+          }).reverse().join('');
+          html += '<section class="card"><h3>История</h3><div class="scroll-x"><table class="hist">' +
+            '<thead><tr><th>Дата</th><th>Вес</th><th>Δ</th><th>Талия</th><th>Самоч.</th><th>Жалобы</th></tr></thead>' +
+            '<tbody>' + hist + '</tbody></table></div>' +
+            '<p class="muted small" style="margin:8px 0 0">Δ — изменение к предыдущему взвешиванию (для первой записи — к весу до операции).</p></section>';
+        } else {
+          html += '<div class="alert warn">Пациент ещё ни разу не заполнял ежемесячный контроль.</div>';
+        }
+        return html;
+      }
+
+      /* ───── График веса (SVG) ───── */
+      function niceStep(range, target) {
+        var raw = range / target;
+        var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+        var n = raw / mag;
+        return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+      }
+
+      function drawChart(p) {
+        var box = document.getElementById('chart');
+        if (!box) return;
+        var pts = [];
+        var baseDate = p.surgeryDate || (p.registeredAt || '').slice(0, 10);
+        if (p.baseWeight !== null && baseDate) pts.push({ d: dayNum(baseDate), iso: baseDate, w: p.baseWeight, base: true });
+        p.checkins.forEach(function (c) {
+          if (c.weight !== null && c.date) pts.push({ d: dayNum(c.date), iso: c.date, w: c.weight, base: false });
+        });
+        pts.sort(function (a, b) { return a.d - b.d || (a.base ? -1 : 1); });
+        if (!pts.length) { box.innerHTML = '<div class="empty">Нет данных для графика</div>'; return; }
+
+        var W = Math.max(280, box.clientWidth), H = 260;
+        var m = { t: 24, r: 16, b: 30, l: 40 };
+        var iw = W - m.l - m.r, ih = H - m.t - m.b;
+
+        var d0 = pts[0].d, d1 = pts[pts.length - 1].d;
+        if (d1 - d0 < 30) { d0 -= 15; d1 += 15; }
+        var ws = pts.map(function (x) { return x.w; });
+        var lo = Math.min.apply(null, ws), hi = Math.max.apply(null, ws);
+        var step = niceStep(Math.max(hi - lo, 4), 4);
+        var y0 = Math.floor((lo - step * 0.25) / step) * step;
+        var y1 = Math.ceil((hi + step * 0.25) / step) * step;
+
+        function X(d) { return m.l + (d - d0) / (d1 - d0) * iw; }
+        function Y(w) { return m.t + (1 - (w - y0) / (y1 - y0)) * ih; }
+
+        var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="График веса пациента">';
+        for (var v = y0; v <= y1 + 1e-9; v += step) {
+          s += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+          s += '<text class="axis" x="' + (m.l - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + fmt(v) + '</text>';
+        }
+        // Подписи оси X: месяцы, не чаще чем по ширине
+        var first = new Date(d0 * 86400000), last = new Date(d1 * 86400000);
+        var months = [];
+        var cur = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 1));
+        while (cur <= last) { months.push(cur); cur = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1)); }
+        var every = Math.max(1, Math.ceil(months.length / Math.max(1, Math.floor(iw / 64))));
+        var MN = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+        months.forEach(function (mo, i) {
+          if (i % every) return;
+          var x = X(mo.getTime() / 86400000);
+          var label = MN[mo.getUTCMonth()] + (mo.getUTCMonth() === 0 || i === 0 ? ' ' + String(mo.getUTCFullYear()).slice(2) : '');
+          s += '<text class="axis" x="' + x + '" y="' + (H - 8) + '" text-anchor="middle">' + label + '</text>';
+        });
+
+        if (pts.length > 1) {
+          s += '<path class="line" d="' + pts.map(function (x, i) { return (i ? 'L' : 'M') + X(x.d).toFixed(1) + ' ' + Y(x.w).toFixed(1); }).join(' ') + '"/>';
+        }
+        pts.forEach(function (x) {
+          s += '<circle class="pt' + (x.base ? ' base' : '') + '" cx="' + X(x.d) + '" cy="' + Y(x.w) + '" r="' + (x.base ? 5 : 4.5) + '"/>';
+        });
+        // Прямые подписи только у первой и последней точки
+        var a = pts[0], z = pts[pts.length - 1];
+        s += '<text class="lbl" x="' + X(a.d) + '" y="' + (Y(a.w) - 10) + '" text-anchor="' + (pts.length > 1 ? 'start' : 'middle') + '">' + fmt(a.w) + '</text>';
+        if (pts.length > 1) s += '<text class="lbl" x="' + X(z.d) + '" y="' + (Y(z.w) - 10) + '" text-anchor="end">' + fmt(z.w) + '</text>';
+
+        s += '<line class="cross" id="cross" y1="' + m.t + '" y2="' + (m.t + ih) + '" visibility="hidden"/>';
+        s += '<circle class="hl" id="hl" r="6" visibility="hidden"/>';
+        s += '<rect id="hit" x="' + m.l + '" y="0" width="' + iw + '" height="' + H + '" fill="transparent"/>';
+        s += '</svg><div class="tip" id="tip" hidden></div>';
+        box.innerHTML = s;
+
+        var svg = box.querySelector('svg');
+        var cross = box.querySelector('#cross'), hl = box.querySelector('#hl'), tip = box.querySelector('#tip');
+        function show(evt) {
+          var r = svg.getBoundingClientRect();
+          var px = (evt.clientX - r.left) * (W / r.width);
+          var best = pts[0];
+          pts.forEach(function (x) { if (Math.abs(X(x.d) - px) < Math.abs(X(best.d) - px)) best = x; });
+          var bx = X(best.d), by = Y(best.w);
+          cross.setAttribute('x1', bx); cross.setAttribute('x2', bx); cross.setAttribute('visibility', 'visible');
+          hl.setAttribute('cx', bx); hl.setAttribute('cy', by); hl.setAttribute('visibility', 'visible');
+          var delta = best.base || p.baseWeight === null ? '' : ' · ' + (best.w <= p.baseWeight ? '−' : '+') + fmt(Math.abs(p.baseWeight - best.w)) + ' от начального';
+          tip.innerHTML = '<b>' + fmt(best.w) + ' кг</b>' + delta + '<br>' + fdate(best.iso) + (best.base ? ' · до операции' : '');
+          tip.hidden = false;
+          var left = bx * (r.width / W);
+          tip.style.left = Math.min(Math.max(left, 90), r.width - 90) + 'px';
+          tip.style.top = (by * (r.height / H)) + 'px';
+        }
+        function hide() {
+          cross.setAttribute('visibility', 'hidden');
+          hl.setAttribute('visibility', 'hidden');
+          tip.hidden = true;
+        }
+        var hit = box.querySelector('#hit');
+        hit.addEventListener('pointermove', show);
+        hit.addEventListener('pointerdown', show);
+        hit.addEventListener('pointerleave', hide);
+      }
+
+      renderList();
+    })();
+  </script>
+</body>
+</html>
