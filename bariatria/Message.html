@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <main class="wrap">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <?= appTitle ?>
+    </div>
+    <section class="card done" style="margin-top:24px">
+      <div class="big" aria-hidden="true">🔒</div>
+      <h1><?= title ?></h1>
+      <p class="muted"><?= text ?></p>
+    </section>
+  </main>
+</body>
+</html>
