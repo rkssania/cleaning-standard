@@ -1,0 +1,88 @@
+<script>
+  var Common = (function () {
+    var STORE_KEY = 'bariatria.patient';
+
+    function remember(name, phone) {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify({ name: name, phone: phone })); } catch (e) {}
+    }
+    function recall() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { return null; }
+    }
+
+    function val(form, name) {
+      var el = form.elements[name];
+      if (!el) return '';
+      if (el.type === 'checkbox') return el.checked;
+      return (el.value || '').trim();
+    }
+    function checkedValues(form, name) {
+      return Array.prototype.slice.call(form.querySelectorAll('input[name="' + name + '"]:checked'))
+        .map(function (el) { return el.value; });
+    }
+    function radioValue(form, name) {
+      var el = form.querySelector('input[name="' + name + '"]:checked');
+      return el ? el.value : '';
+    }
+
+    function digits(s) { return String(s || '').replace(/\D/g, ''); }
+
+    function checkWeight(form, name, min, max) {
+      var el = form.elements[name];
+      var n = Number(String(el.value).replace(',', '.'));
+      var bad = el.value.trim() === '' || !isFinite(n) || n < min || n > max;
+      el.setAttribute('aria-invalid', bad ? 'true' : 'false');
+      return bad ? 'Вес должен быть от ' + min + ' до ' + max + ' кг' : '';
+    }
+    function checkRequired(form, name, msg) {
+      var el = form.elements[name];
+      var bad = !el.value.trim();
+      el.setAttribute('aria-invalid', bad ? 'true' : 'false');
+      return bad ? msg : '';
+    }
+    function checkPhone(form, name) {
+      var el = form.elements[name];
+      var n = digits(el.value).length;
+      var bad = n < 10 || n > 15;
+      el.setAttribute('aria-invalid', bad ? 'true' : 'false');
+      return bad ? 'Проверьте номер телефона: нужно 10–15 цифр' : '';
+    }
+
+    function showErrors(box, errors) {
+      errors = errors.filter(Boolean);
+      if (!errors.length) { box.hidden = true; box.textContent = ''; return false; }
+      box.innerHTML = '';
+      errors.forEach(function (msg) {
+        var d = document.createElement('div');
+        d.textContent = msg;
+        box.appendChild(d);
+      });
+      box.hidden = false;
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return true;
+    }
+
+    function send(fnName, payload, button, errorBox, onOk) {
+      button.disabled = true;
+      var label = button.textContent;
+      button.textContent = 'Отправляем…';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          button.disabled = false;
+          button.textContent = label;
+          onOk(res);
+        })
+        .withFailureHandler(function (err) {
+          button.disabled = false;
+          button.textContent = label;
+          var msg = (err && err.message) ? err.message.replace(/^Error:\s*/, '') : 'Не удалось отправить. Проверьте интернет и попробуйте ещё раз.';
+          showErrors(errorBox, [msg]);
+        })[fnName](payload);
+    }
+
+    return {
+      remember: remember, recall: recall, val: val, checkedValues: checkedValues, radioValue: radioValue,
+      checkWeight: checkWeight, checkRequired: checkRequired, checkPhone: checkPhone,
+      showErrors: showErrors, send: send
+    };
+  })();
+</script>

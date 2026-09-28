@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <main class="wrap">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <?= appTitle ?>
+    </div>
+    <h1>Первичная анкета</h1>
+    <p class="lead">Заполните один раз после операции. Дальше раз в месяц вы будете отмечать вес в короткой форме контроля. Врач: <?= doctorName ?>.</p>
+
+    <form id="form" novalidate autocomplete="on">
+      <div id="errors" class="alert error" role="alert" hidden></div>
+
+      <section class="card">
+        <h2>Контакты</h2>
+        <label class="field">
+          <span class="label">ФИО <span class="req">*</span></span>
+          <input type="text" name="name" autocomplete="name" required maxlength="200">
+        </label>
+        <label class="field">
+          <span class="label">Телефон <span class="req">*</span></span>
+          <input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="+7 7__ ___ __ __" required maxlength="40">
+          <span class="hint">По этому номеру к вам будут привязаны все ежемесячные отметки — вводите его одинаково.</span>
+        </label>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Дата рождения</span>
+            <input type="date" name="birthDate" autocomplete="bday">
+          </label>
+          <label class="field">
+            <span class="label">Пол</span>
+            <select name="sex">
+              <option value="">—</option>
+              <option>Женский</option>
+              <option>Мужской</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span class="label">Email</span>
+          <input type="email" name="email" autocomplete="email" maxlength="200">
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Операция</h2>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Дата операции</span>
+            <input type="date" name="surgeryDate">
+          </label>
+          <label class="field">
+            <span class="label">Вид операции</span>
+            <select name="surgeryType">
+              <option value="">—</option>
+              <option>Мини-гастрошунтирование</option>
+              <option>Sleeve-резекция</option>
+              <option>Другое</option>
+            </select>
+          </label>
+        </div>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Рост, см</span>
+            <input type="text" name="height" inputmode="decimal" min="100" max="230" step="1">
+          </label>
+          <label class="field">
+            <span class="label">Вес до операции, кг <span class="req">*</span></span>
+            <input type="text" name="baseWeight" inputmode="decimal" min="<?= minWeight ?>" max="<?= maxWeight ?>" step="0.1" required>
+          </label>
+        </div>
+        <label class="field">
+          <span class="label">Сопутствующие заболевания</span>
+          <textarea name="diseases" maxlength="2000" placeholder="Например: сахарный диабет 2 типа, гипертония, апноэ сна"></textarea>
+        </label>
+      </section>
+
+      <section class="card">
+        <label class="checkline">
+          <input type="checkbox" name="consent" required>
+          <span>Я даю согласие на обработку моих персональных и медицинских данных для наблюдения после операции. <span class="req">*</span></span>
+        </label>
+        <button type="submit" id="submit" class="btn block">Отправить анкету</button>
+      </section>
+    </form>
+
+    <section id="done" class="card done" hidden>
+      <div class="big" aria-hidden="true">✅</div>
+      <h2>Спасибо, анкета отправлена</h2>
+      <p class="muted">Раз в месяц заполняйте короткую форму контроля. Сохраните ссылку в закладки:</p>
+      <a class="btn block" href="<?= baseUrl ?>?page=checkin">Форма ежемесячного контроля</a>
+    </section>
+
+    <p class="footer">Поля со <span class="req">*</span> обязательны. Уже заполняли анкету? <a href="<?= baseUrl ?>?page=checkin">Перейти к ежемесячному контролю</a></p>
+  </main>
+
+  <?!= include('Common'); ?>
+  <script>
+    (function () {
+      var MIN = <?= minWeight ?>, MAX = <?= maxWeight ?>;
+      var form = document.getElementById('form');
+      var errors = document.getElementById('errors');
+      var button = document.getElementById('submit');
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var consent = form.elements.consent.checked;
+        var bad = Common.showErrors(errors, [
+          Common.checkRequired(form, 'name', 'Укажите ФИО'),
+          Common.checkPhone(form, 'phone'),
+          Common.checkWeight(form, 'baseWeight', MIN, MAX),
+          consent ? '' : 'Нужно согласие на обработку данных'
+        ]);
+        if (bad) return;
+
+        var payload = {};
+        ['name', 'phone', 'birthDate', 'sex', 'email', 'surgeryDate', 'surgeryType', 'height', 'baseWeight', 'diseases']
+          .forEach(function (k) { payload[k] = Common.val(form, k); });
+        payload.consent = consent;
+
+        Common.send('submitIntake', payload, button, errors, function () {
+          Common.remember(payload.name, payload.phone);
+          form.hidden = true;
+          document.getElementById('done').hidden = false;
+          window.scrollTo(0, 0);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
