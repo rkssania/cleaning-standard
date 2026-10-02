@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <main class="wrap">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <?= appTitle ?>
+    </div>
+    <h1>Ежемесячный контроль</h1>
+    <p class="lead">Раз в месяц: взвесьтесь утром натощак и заполните форму. Обязательны только ФИО, телефон и вес — остальное по возможности.</p>
+
+    <form id="form" novalidate autocomplete="on">
+      <div id="errors" class="alert error" role="alert" hidden></div>
+
+      <section class="card">
+        <h2>Кто вы</h2>
+        <label class="field">
+          <span class="label">ФИО <span class="req">*</span></span>
+          <input type="text" name="name" autocomplete="name" required maxlength="200">
+        </label>
+        <label class="field">
+          <span class="label">Телефон <span class="req">*</span></span>
+          <input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="+7 7__ ___ __ __" required maxlength="40">
+          <span class="hint">Тот же номер, что в первичной анкете.</span>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Вес и объёмы</h2>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Вес, кг <span class="req">*</span></span>
+            <input type="text" name="weight" inputmode="decimal" min="<?= minWeight ?>" max="<?= maxWeight ?>" step="0.1" required>
+          </label>
+          <label class="field">
+            <span class="label">Дата взвешивания</span>
+            <input type="date" name="weighDate">
+          </label>
+        </div>
+        <label class="field">
+          <span class="label">Талия, см</span>
+          <input type="text" name="waist" inputmode="decimal" min="40" max="250" step="0.5">
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Самочувствие</h2>
+        <div class="scale" role="radiogroup" aria-label="Самочувствие от 1 до 5">
+          <label class="chip"><input type="radio" name="wellbeing" value="1"><span><b>1</b><small>плохо</small></span></label>
+          <label class="chip"><input type="radio" name="wellbeing" value="2"><span><b>2</b><small>&nbsp;</small></span></label>
+          <label class="chip"><input type="radio" name="wellbeing" value="3"><span><b>3</b><small>норм.</small></span></label>
+          <label class="chip"><input type="radio" name="wellbeing" value="4"><span><b>4</b><small>&nbsp;</small></span></label>
+          <label class="chip"><input type="radio" name="wellbeing" value="5"><span><b>5</b><small>отлично</small></span></label>
+        </div>
+
+        <h3 style="margin-top:20px">Жалобы</h3>
+        <div class="chips" id="complaints">
+          <label class="chip"><input type="checkbox" name="complaints" value="Нет жалоб"><span>Нет жалоб</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Тошнота"><span>Тошнота</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Рвота"><span>Рвота</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Изжога"><span>Изжога</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Боль в животе"><span>Боль в животе</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Демпинг-синдром"><span>Демпинг-синдром</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Диарея"><span>Диарея</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Запор"><span>Запор</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Слабость, головокружение"><span>Слабость, головокружение</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Выпадение волос"><span>Выпадение волос</span></label>
+          <label class="chip"><input type="checkbox" name="complaints" value="Непереносимость продуктов"><span>Непереносимость продуктов</span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Режим</h2>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Вода в день</span>
+            <select name="water">
+              <option value="">—</option>
+              <option>меньше 1 л</option>
+              <option>1–1,5 л</option>
+              <option>1,5–2 л</option>
+              <option>больше 2 л</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="label">Белок в день</span>
+            <select name="protein">
+              <option value="">—</option>
+              <option>меньше 60 г</option>
+              <option>60–80 г</option>
+              <option>больше 80 г</option>
+              <option>не считаю</option>
+            </select>
+          </label>
+        </div>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Активность</span>
+            <select name="activity">
+              <option value="">—</option>
+              <option>низкая (до 5 000 шагов)</option>
+              <option>средняя (5–10 тыс. шагов)</option>
+              <option>высокая (больше 10 тыс. / спорт)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="label">Витамины</span>
+            <select name="vitamins">
+              <option value="">—</option>
+              <option>принимаю регулярно</option>
+              <option>принимаю нерегулярно</option>
+              <option>не принимаю</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Анализы</h2>
+        <p class="muted small" style="margin-top:-6px">Если сдавали в этом месяце. Можно оставить пустым.</p>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Гемоглобин, г/л</span>
+            <input type="text" name="hb" inputmode="decimal" min="30" max="250" step="1">
+          </label>
+          <label class="field">
+            <span class="label">Ферритин, нг/мл</span>
+            <input type="text" name="ferritin" inputmode="decimal" min="0" max="3000" step="0.1">
+          </label>
+        </div>
+        <div class="row2">
+          <label class="field">
+            <span class="label">Витамин D, нг/мл</span>
+            <input type="text" name="vitD" inputmode="decimal" min="0" max="300" step="0.1">
+          </label>
+          <label class="field">
+            <span class="label">Витамин B12, пг/мл</span>
+            <input type="text" name="b12" inputmode="decimal" min="0" max="5000" step="1">
+          </label>
+        </div>
+        <label class="field">
+          <span class="label">Комментарий для врача</span>
+          <textarea name="comment" maxlength="2000"></textarea>
+        </label>
+        <button type="submit" id="submit" class="btn block">Отправить</button>
+      </section>
+    </form>
+
+    <section id="done" class="card done" hidden>
+      <div class="big" aria-hidden="true">✅</div>
+      <h2>Спасибо, данные отправлены</h2>
+      <p class="muted" id="doneText">Следующий контроль — через месяц, по этой же ссылке.</p>
+      <div id="unmatched" class="alert warn" hidden>
+        Мы не нашли вашу первичную анкету с этим номером телефона. Запись сохранена — врач свяжет её вручную.
+        Если вы ещё не заполняли анкету, <a href="<?= baseUrl ?>">заполните её</a>.
+      </div>
+    </section>
+
+    <p class="footer">Первый раз? Сначала <a href="<?= baseUrl ?>">заполните первичную анкету</a>.</p>
+  </main>
+
+  <?!= include('Common'); ?>
+  <script>
+    (function () {
+      var MIN = <?= minWeight ?>, MAX = <?= maxWeight ?>;
+      var form = document.getElementById('form');
+      var errors = document.getElementById('errors');
+      var button = document.getElementById('submit');
+
+      var d = new Date();
+      form.elements.weighDate.value = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      var saved = Common.recall();
+      if (saved) {
+        form.elements.name.value = saved.name || '';
+        form.elements.phone.value = saved.phone || '';
+      }
+
+      // «Нет жалоб» снимает остальные отметки и наоборот
+      document.getElementById('complaints').addEventListener('change', function (e) {
+        if (!e.target.checked) return;
+        var none = e.target.value === 'Нет жалоб';
+        form.querySelectorAll('input[name="complaints"]').forEach(function (el) {
+          if (el !== e.target && (none || el.value === 'Нет жалоб')) el.checked = false;
+        });
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var bad = Common.showErrors(errors, [
+          Common.checkRequired(form, 'name', 'Укажите ФИО'),
+          Common.checkPhone(form, 'phone'),
+          Common.checkWeight(form, 'weight', MIN, MAX)
+        ]);
+        if (bad) return;
+
+        var payload = {};
+        ['name', 'phone', 'weighDate', 'weight', 'waist', 'water', 'protein', 'activity', 'vitamins', 'hb', 'ferritin', 'vitD', 'b12', 'comment']
+          .forEach(function (k) { payload[k] = Common.val(form, k); });
+        payload.wellbeing = Common.radioValue(form, 'wellbeing');
+        payload.complaints = Common.checkedValues(form, 'complaints');
+
+        Common.send('submitCheckin', payload, button, errors, function (res) {
+          Common.remember(payload.name, payload.phone);
+          form.hidden = true;
+          document.getElementById('done').hidden = false;
+          document.getElementById('unmatched').hidden = !!(res && res.matched);
+          window.scrollTo(0, 0);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
