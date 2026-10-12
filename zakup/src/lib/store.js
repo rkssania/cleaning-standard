@@ -19,7 +19,7 @@ export function useStore() {
   }, [state]);
 
   const built = useMemo(() => buildList(state), [state]);
-  const summary = useMemo(() => summarize(built.items), [built]);
+  const summary = useMemo(() => summarize(built.items, state.facts), [built, state.facts]);
   const suggestions = useMemo(() => suggestLinks(state, built), [state, built]);
 
   const edit = useCallback((key, patch) => setState((s) => {
@@ -53,9 +53,10 @@ export function useStore() {
   const setImported = useCallback((parts) => setState((s) => ({
     ...s, ...parts, importedAt: new Date().toISOString(),
   })), []);
+  const setFact = useCallback((name, v) => setState((s) => ({ ...s, facts: { ...s.facts, [name]: v } })), []);
   const setSettings = useCallback((p) => setState((s) => ({ ...s, settings: { ...s.settings, ...p } })), []);
   const reset = useCallback(() => setState(emptyState()), []);
   const restore = useCallback((st) => setState({ ...emptyState(), ...st }), []);
 
-  return { state, built, summary, suggestions, edit, link, unlink, addManual, removeManual, setImported, setSettings, reset, restore };
+  return { state, built, summary, suggestions, edit, link, unlink, addManual, removeManual, setImported, setSettings, setFact, reset, restore };
 }

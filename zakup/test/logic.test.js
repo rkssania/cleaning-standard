@@ -42,10 +42,11 @@ test('ручная связь: уборочный комбайн = тележк�
 test('сумма = докупить × цена; поставщики план/факт', () => {
   const key = looseKey('Кровать функциональная');
   const s = st({ edits: { [key]: { price: 100, supplier: 'А', stage: 'paid' } } });
+  assert.equal(summarize(buildList(s).items).fact, 0); // факт сам не считается
   const { items } = buildList(s);
-  const sum = summarize(items);
+  const sum = summarize(items, { 'А': 250 });
   assert.equal(sum.total, 600);
-  assert.deepEqual(sum.suppliers[0], { name: 'А', plan: 600, fact: 600, positions: 1 });
+  assert.deepEqual(sum.suppliers[0], { name: 'А', plan: 600, fact: 250, positions: 1 });
   const edited = buildList(st({ edits: { [key]: { qty: 20, price: 100 } } })).items.find((i) => i.key === key);
   assert.equal(edited.buy, 16); assert.equal(edited.sum, 1600);
 });

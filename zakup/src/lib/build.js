@@ -12,8 +12,6 @@ export const STAGES = [
   ['installed', 'Установлено'],
 ];
 export const STAGE_LABEL = Object.fromEntries(STAGES);
-// Этапы, с которых деньги считаются потраченными («факт»)
-export const FACT_STAGES = new Set(['paid', 'transit', 'received', 'installed']);
 
 export const STATUS = {
   china: 'Едет из Китая',
@@ -30,6 +28,7 @@ export const emptyState = () => ({
   aliasNames: {}, // looseKey -> исходное название (для списка связей)
   edits: {}, // key -> {qty,supplier,price,responsible,deadline,stage,comment,category}
   manual: [], // {id,name,size,qty,room}
+  facts: {}, // поставщик -> фактически оплаченная сумма (вводится вручную)
   settings: { dedupePit: true },
   importedAt: null,
 });
@@ -175,7 +174,7 @@ export function buildList(state) {
   return { items, extras, reconcile: { ksOnly, ksMore, sdNotInKs } };
 }
 
-export function summarize(items) {
+export function summarize(items, facts = {}) {
   const counts = { china: 0, request: 0, added: 0 };
   let total = 0;
   const sup = new Map();
@@ -184,12 +183,13 @@ export function summarize(items) {
     total += it.sum;
     if (!it.buy) continue;
     const name = it.supplier || 'Без поставщика';
-    const s = sup.get(name) || { name, plan: 0, fact: 0, positions: 0 };
+    const s = sup.get(name) || { name, plan: 0, fact: toNum(facts[name]), positions: 0 };
     s.plan += it.sum;
-    if (FACT_STAGES.has(it.stage)) s.fact += it.sum;
     s.positions++;
     sup.set(name, s);
   }
+  // поставщик без позиций к закупу, но с внесённым фактом, тоже показываем
+  for (const [name, v] of Object.entries(facts)) if (!sup.has(name) && toNum(v)) sup.set(name, { name, plan: 0, fact: toNum(v), positions: 0 });
   const suppliers = [...sup.values()].sort((a, b) => b.plan - a.plan);
   const fact = suppliers.reduce((a, s) => a + s.fact, 0);
   return { counts, total, fact, suppliers };

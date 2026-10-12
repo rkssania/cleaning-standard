@@ -36,7 +36,7 @@ export default function App() {
   const empty = !state.sd.length && !state.ks.length && !state.china.length && !state.manual.length;
 
   const doExport = async () => {
-    const blob = await exportXlsx(built);
+    const blob = await exportXlsx(built, state.facts);
     download(blob, `Закуп оборудования ${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
@@ -82,7 +82,7 @@ export default function App() {
           </div>
         ) : (
           <>
-            <Summary summary={summary} extrasCount={built.extras.length} status={f.status} onStatus={(s) => setF({ ...f, status: s })} />
+            <Summary summary={{ ...summary, facts: state.facts }} onFact={store.setFact} extrasCount={built.extras.length} status={f.status} onStatus={(s) => setF({ ...f, status: s })} />
             {suggestions.length > 0 && (
               <button className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-left text-sm" onClick={() => setDlg({ type: 'links' })}>
                 Найдено возможных совпадений названий: <b>{suggestions.length}</b>. Проверить и связать →

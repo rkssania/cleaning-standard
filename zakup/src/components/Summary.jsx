@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { STATUS } from '../lib/build.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { BADGE_STYLE, ROW_STYLE } from './ui.jsx';
+import { EditInput, ROW_STYLE } from './ui.jsx';
 
-export default function Summary({ summary, extrasCount, status, onStatus }) {
+export default function Summary({ summary, extrasCount, status, onStatus, onFact }) {
   const [open, setOpen] = useState(false);
   const tiles = [
     ['china', summary.counts.china],
@@ -33,8 +33,8 @@ export default function Summary({ summary, extrasCount, status, onStatus }) {
             <div className="text-2xl font-bold text-brand">{fmtMoney(summary.total)} ₸</div>
           </div>
           <div className="text-right">
-            <div className="text-xs font-medium text-slate-500">Из них оплачено и далее (факт)</div>
-            <div className="text-lg font-semibold">{fmtMoney(summary.fact)} ₸</div>
+            <div className="text-xs font-medium text-slate-500">Факт (вносится вручную)</div>
+            <div className="text-lg font-semibold">{summary.fact ? `${fmtMoney(summary.fact)} ₸` : '—'}</div>
           </div>
           <button className="btn !px-2 !py-1.5 text-xs" onClick={() => setOpen(!open)}>
             По поставщикам {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -56,7 +56,7 @@ export default function Summary({ summary, extrasCount, status, onStatus }) {
                   <tr key={s.name} className="border-b last:border-0">
                     <td className="py-1 pr-2">{s.name}</td>
                     <td className="px-2 text-right tabular-nums">{fmtMoney(s.plan)}</td>
-                    <td className="px-2 text-right tabular-nums">{fmtMoney(s.fact)}</td>
+                    <td className="w-32 px-1 py-1"><EditInput type="number" align="right" placeholder="—" value={summary.facts?.[s.name] ?? (s.fact || '')} onCommit={(v) => onFact(s.name, v)} /></td>
                     <td className="pl-2 text-right tabular-nums">{s.positions}</td>
                   </tr>
                 ))}

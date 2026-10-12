@@ -13,7 +13,7 @@ const solid = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } 
 const thin = { style: 'thin', color: { argb: 'FFBFBFBF' } };
 const border = { top: thin, left: thin, bottom: thin, right: thin };
 
-export async function exportXlsx({ items, extras }) {
+export async function exportXlsx({ items, extras }, facts = {}) {
   const ExcelJS = (await import('exceljs')).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Центр гематологии, Астана';
@@ -74,7 +74,7 @@ export async function exportXlsx({ items, extras }) {
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLS.length } };
 
   // Сводка
-  const s = summarize(items);
+  const s = summarize(items, facts);
   const sm = wb.addWorksheet('Сводка');
   sm.columns = [{ width: 38 }, { width: 18 }, { width: 18 }, { width: 14 }];
   const bold = (r) => r.eachCell((c) => (c.font = { bold: true }));
@@ -86,10 +86,10 @@ export async function exportXlsx({ items, extras }) {
   sm.addRow([STATUS.extra, extras.length]).getCell(1).fill = solid(FILL.extra);
   sm.addRow([]);
   bold(sm.addRow(['Итого к закупу, тг', s.total]));
-  sm.addRow(['Оплачено и далее (факт), тг', s.fact]);
+  sm.addRow(['Факт (внесён вручную), тг', s.fact || null]);
   sm.addRow([]);
   bold(sm.addRow(['Поставщик', 'План, тг', 'Факт, тг', 'Позиций']));
-  s.suppliers.forEach((x) => sm.addRow([x.name, x.plan, x.fact, x.positions]));
+  s.suppliers.forEach((x) => sm.addRow([x.name, x.plan, x.fact || null, x.positions]));
   sm.eachRow((r) => [2, 3].forEach((c) => (r.getCell(c).numFmt = '#,##0')));
 
   const buf = await wb.xlsx.writeBuffer();
