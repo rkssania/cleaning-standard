@@ -42,7 +42,7 @@ export default function App() {
 
   return (
     <div className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
-      <header className="sticky top-0 z-30 bg-brand pt-[env(safe-area-inset-top)] text-white shadow">
+      <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 bg-brand text-white shadow">
         <div className="mx-auto flex max-w-[1800px] items-center gap-2 px-4 py-2.5">
           <Droplet size={26} className="shrink-0 fill-drop text-drop" />
           <div className="min-w-0 flex-1 leading-tight">

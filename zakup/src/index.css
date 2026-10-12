@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 html { -webkit-text-size-adjust: 100%; }
+body { background: #f8fafc; color: #0f172a; margin: 0; font-size: 16px; }
 input, select, textarea { font-size: 16px; } /* без автозума на iPhone */
 @media (min-width: 1024px) { input, select, textarea { font-size: 14px; } }
 
