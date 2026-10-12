@@ -50,7 +50,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra }) {
                   <td className={`max-w-[220px] px-2 py-2 text-xs ${strike(it)}`}>{spec(it)}</td>
                   <td className={`max-w-[300px] px-2 py-2 text-xs ${strike(it)}`}>{it.rooms}</td>
                   <td className="w-20 px-1 py-1.5">
-                    <EditInput type="number" align="right" value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} />
+                    <EditInput type="number" align="right" className={it.qty ? '' : '!border-amber-500 ring-2 ring-amber-300'} value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} />
                     {it.qtyEdited && <button className="text-[11px] text-slate-600 underline" onClick={() => edit(it.key, { qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
                   </td>
                   <td className="px-2 py-2 text-right tabular-nums">{it.china || ''}</td>
@@ -105,7 +105,7 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra }) {
               {spec(it) && <div className={`mt-1 text-xs ${strike(it)}`}>{spec(it)}</div>}
               {it.rooms && <div className={`mt-1 text-xs opacity-80 ${strike(it)}`}>{it.rooms}</div>}
               <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
-                <label>Всего<EditInput type="number" align="right" value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} /></label>
+                <label>Всего<EditInput type="number" align="right" className={it.qty ? '' : '!border-amber-500 ring-2 ring-amber-300'} value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} /></label>
                 <div>Из Китая<div className="pt-1.5 text-base font-semibold">{it.china}</div></div>
                 <div>Докупить<div className="pt-1.5 text-base font-bold">{it.buy}</div></div>
               </div>

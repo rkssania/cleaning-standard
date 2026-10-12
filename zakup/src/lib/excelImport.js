@@ -1,5 +1,5 @@
 // Чтение Excel и автоопределение колонок. Работает и в браузере, и в Node (для тестов).
-import { norm, toNum } from './normalize.js';
+import { norm, toNum, isOddQty } from './normalize.js';
 
 function plain(v) {
   if (v == null) return '';
@@ -37,10 +37,10 @@ export const FIELDS = {
 };
 
 const RE = {
-  name: /наименован|название|оборудован|позици|товар/,
-  room: /помещен|зона|кабинет|комнат|отделен|подраздел/,
+  name: /наименован|название|оборудован|оснащен|позици|товар/,
+  room: /помещен|зона|кабинет|комнат|отделен|подраздел|планир/,
   size: /габарит|размер|характеристик|параметр|модел/,
-  qty: /^(кол|количеств|шт( |$))|кол во/,
+  qty: /количеств|^кол|кол во|^шт( |$)/,
   note: /примечан/,
   comment: /коммент/,
   price: /цена|стоимост/,
@@ -74,6 +74,11 @@ export function detectColumns(rows, kind) {
     if (score > best.score) best = { score, headerRow: r, cols };
   }
   const hr = rows[best.headerRow] || [];
+  if (kind === 'sd' && best.cols.comment === undefined && best.cols.note !== undefined) {
+    const next = best.cols.note + 1;
+    const hasData = rows.slice(best.headerRow + 1).some((r) => String(r[next] ?? '').trim());
+    if (!String(hr[next] ?? '').trim() && hasData) best.cols.comment = next;
+  }
   const width = Math.max(0, ...rows.slice(0, 40).map((r) => r.length));
   const headers = Array.from({ length: width }, (_, i) => String(hr[i] ?? '').trim());
   return { headerRow: best.headerRow, cols: best.cols, headers };
@@ -81,9 +86,12 @@ export function detectColumns(rows, kind) {
 
 const SKIP = /^(итого|всего|сумма)/;
 
+/** «Палата на 2 койки, 22,37 м²» → «Палата на 2 койки» */
+export const cleanRoom = (r) => String(r ?? '').replace(/[,;(]?\s*\d+(?:[.,]\d+)?\s*(?:кв\.?\s*м|м[²2])\.?\)?/gi, '').replace(/\s+/g, ' ').trim();
+
 /**
  * Разбор листа. map = {headerRow, cols}. defaultRoom — имя листа, если колонки «Помещение» нет.
- * Строка, в которой заполнено только наименование, считается заголовком раздела (помещением).
+ * Строки-разделы («1. Склад…», где во всех ячейках один и тот же текст, или заполнена одна ячейка) не попадают в список.
  */
 export function parseSheet(rows, map, kind, defaultRoom = '') {
   const { cols, headerRow } = map;
@@ -93,14 +101,22 @@ export function parseSheet(rows, map, kind, defaultRoom = '') {
     const row = rows[r];
     const get = (f) => (cols[f] === undefined ? '' : row[cols[f]] ?? '');
     const name = String(get('name')).trim();
-    const filled = row.filter((v) => String(v ?? '').trim() !== '');
-    // Строка с единственным значением — заголовок раздела (помещение), а не позиция.
-    // Исключение: если помещения вынесены в отдельную колонку, одинокое название — позиция без количества.
-    if (filled.length === 1 && kind !== 'china' && String(get('qty')).trim() === '') {
-      const only = String(filled[0]).trim();
-      if (!(only === name && cols.room !== undefined)) {
-        if (!SKIP.test(norm(only))) room = only;
+    const filled = row.map((v) => String(v ?? '').trim()).filter(Boolean);
+    if (!filled.length) continue;
+    if (kind !== 'china') {
+      // весь ряд — один и тот же текст (объединённая ячейка-раздел)
+      if (filled.length > 1 && filled.every((v) => v === filled[0])) {
+        if (cols.room === undefined && !SKIP.test(norm(filled[0]))) room = cleanRoom(filled[0]);
         continue;
+      }
+      // Одно значение в ряду — заголовок раздела (помещение), если помещения не вынесены в колонку.
+      if (filled.length === 1 && String(get('qty')).trim() === '') {
+        if (!(filled[0] === name && cols.room !== undefined)) {
+          // помещение без оборудования в своей колонке: следующие строки с пустой ячейкой относятся к нему
+          const roomOnly = cols.room !== undefined && String(get('room')).trim() === filled[0];
+          if (!SKIP.test(norm(filled[0])) && (cols.room === undefined || roomOnly)) room = cleanRoom(filled[0]);
+          continue;
+        }
       }
     }
     if (!name || SKIP.test(norm(name))) continue;
@@ -110,37 +126,38 @@ export function parseSheet(rows, map, kind, defaultRoom = '') {
       out.push({ name, qty: toNum(qtyRaw), price: toNum(get('price')) });
       continue;
     }
-    const roomCell = String(get('room')).trim();
+    const roomCell = cleanRoom(get('room'));
     if (cols.room !== undefined && roomCell) room = roomCell;
+    let note = String(get('note')).trim();
+    if (isOddQty(qtyRaw)) note = [`Кол-во в источнике: ${String(qtyRaw).trim()}`, note].filter(Boolean).join('; ');
     out.push({
       room: cols.room !== undefined ? roomCell || room : room,
       name,
       size: String(get('size')).trim(),
       qty: toNum(qtyRaw),
-      note: String(get('note')).trim(),
+      note,
       comment: String(get('comment')).trim(),
     });
   }
   return out;
 }
 
-/** Подбирает листы по названиям для трёх источников. */
+/**
+ * Подбирает листы для трёх источников по содержимому заголовков (имена файлов и листов могут быть любыми):
+ *  - Китай: есть колонка «Астана» (+ наименование);
+ *  - КС Астана: «Оснащение» / «Планировка» или лист с названием «КС Астана»;
+ *  - Общая заявка СД: колонки помещение + наименование + количество (все остальные листы такого вида).
+ */
 export function guessSheets(files) {
-  const rules = {
-    sd: (f, s) => /общая.*заявк|заявк.*сд|^сд$|(?<![а-я])сд(?![а-я])/i.test(s) || /общая.*заявк|заявк.*сд/i.test(f),
-    ks: (f, s) => /кс.*астан|астан.*кс|^кс(?![а-я])/i.test(s) || (/кс.*астан/i.test(f) && !/заявк/i.test(s)),
-    china: (f, s) => /заказ\s*1/i.test(s) || (/китай/i.test(f) && /заказ/i.test(s)),
-  };
   const res = { sd: [], ks: [], china: [] };
   files.forEach((fl, fi) => fl.sheets.forEach((sh, si) => {
-    for (const k of ['sd', 'ks', 'china']) {
-      if (res[k].length === 0 || k === 'ks' || k === 'sd') {
-        if (rules[k](fl.file, sh.name)) res[k].push(`${fi}:${si}`);
-      }
-    }
+    const id = `${fi}:${si}`;
+    const m = detectColumns(sh.rows, 'sd');
+    const c = detectColumns(sh.rows, 'china');
+    if (c.cols.name !== undefined && c.cols.qty !== undefined) res.china.push(id);
+    else if (/оснащен|планировк/.test(norm(sh.rows[m.headerRow]?.join(' ') ?? '')) && m.cols.name !== undefined || /кс.*астан/.test(norm(sh.name))) res.ks.push(id);
+    else if (m.cols.name !== undefined && m.cols.qty !== undefined && m.cols.room !== undefined) res.sd.push(id);
   }));
-  // Лист не должен попадать в два источника сразу — СД имеет приоритет над КС
-  res.ks = res.ks.filter((id) => !res.sd.includes(id));
-  res.china = res.china.filter((id) => !res.sd.includes(id) && !res.ks.includes(id)).slice(0, 1);
+  res.china = res.china.slice(0, 1);
   return res;
 }

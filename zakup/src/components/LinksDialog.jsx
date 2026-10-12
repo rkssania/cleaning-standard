@@ -53,11 +53,21 @@ export default function LinksDialog({ store, onClose, focus }) {
           {suggestions.length > 0 && (
             <section>
               <h3 className="font-semibold">Возможно, это одно и то же ({suggestions.length})</h3>
+              <p className="mb-1 text-xs text-slate-500">Нажмите на подходящий вариант, и позиции объединятся. Если ни один не подходит, пропустите.</p>
               <ul className="divide-y">
-                {suggestions.slice(0, 30).map((s) => (
-                  <li key={s.from + s.to} className="flex items-center justify-between gap-2 py-1.5">
-                    <span><b>{s.fromName}</b> <span className="text-slate-500">→</span> {s.toName}</span>
-                    <button className="btn !py-1 text-xs" onClick={() => link(s.from, s.to, s.fromName)}><Check size={13} /> Связать</button>
+                {suggestions.slice(0, 60).map((s) => (
+                  <li key={s.from} className="py-2">
+                    <div>
+                      <span className={`mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-semibold ${s.kind === 'china' ? 'bg-emerald-700 text-white' : 'bg-red-600 text-white'}`}>{s.kind === 'china' ? 'Китай' : 'Добавлено'}</span>
+                      <b>{s.fromName}</b> <span className="text-slate-500">· {s.qty} шт</span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {s.cands.map((c) => (
+                        <button key={c.key} className="btn !py-1 text-left text-xs" onClick={() => link(s.from, c.key, s.fromName)}>
+                          <Check size={13} className="shrink-0" /> <span>{c.name.length > 60 ? c.name.slice(0, 60) + '…' : c.name} <span className="text-slate-400">{Math.round(c.score * 100)}%</span></span>
+                        </button>
+                      ))}
+                    </div>
                   </li>
                 ))}
               </ul>

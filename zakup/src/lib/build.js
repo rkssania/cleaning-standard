@@ -195,26 +195,23 @@ export function summarize(items) {
   return { counts, total, fact, suppliers };
 }
 
-/** Подсказки связей: непарные названия, похожие на позиции списка. */
+/**
+ * Подсказки связей. Для каждой «осиротевшей» позиции (едет из Китая без потребности
+ * или добавлена из КС Астана) — до 4 похожих позиций списка.
+ */
 export function suggestLinks(state, built) {
-  const itemKeys = new Set(built.items.map((i) => i.key));
   const out = [];
-  for (const e of built.extras) {
-    let best = null;
-    for (const it of built.items) {
-      const s = similarity(e.name, it.name);
-      if (s >= 0.5 && (!best || s > best.s)) best = { it, s };
-    }
-    if (best) out.push({ from: e.key, fromName: e.name, to: best.it.key, toName: best.it.name, score: best.s });
-  }
-  for (const it of built.reconcile.ksOnly) {
-    let best = null;
-    for (const o of built.items) {
-      if (o.source !== 'sd' || !itemKeys.has(o.key)) continue;
-      const s = similarity(it.name, o.name);
-      if (s >= 0.5 && (!best || s > best.s)) best = { it: o, s };
-    }
-    if (best) out.push({ from: it.key, fromName: it.name, to: best.it.key, toName: best.it.name, score: best.s });
-  }
-  return out.sort((a, b) => b.score - a.score);
+  const add = (from, kind, pool, min) => {
+    const cands = pool
+      .filter((o) => o.key !== from.key)
+      .map((o) => ({ key: o.key, name: o.name, score: similarity(from.name, o.name) }))
+      .filter((c) => c.score >= min)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+    if (cands.length) out.push({ from: from.key, fromName: from.name, qty: from.qty, kind, cands });
+  };
+  for (const e of built.extras) add(e, 'china', built.items, 0.4);
+  const sdItems = built.items.filter((i) => i.source === 'sd');
+  for (const it of built.reconcile.ksOnly) add(it, 'ks', sdItems, 0.5);
+  return out.sort((a, b) => b.cands[0].score - a.cands[0].score);
 }

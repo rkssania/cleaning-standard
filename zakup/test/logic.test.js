@@ -98,3 +98,27 @@ test('экспорт: цвета, зачёркивание, формула су�
   assert.equal(red.fill.fgColor.argb, 'FFF8CBAD');
   assert.match(formula.formula, /^F\d+\*K\d+$/); assert.equal(formula.result, 600);
 });
+
+test('особенности реальных файлов: разделы, «≥8», «По потребности», площадь в помещении, колонка «Астана»', async () => {
+  const wb = new ExcelJS.Workbook();
+  const sd = wb.addWorksheet('Фарма');
+  sd.addRow(['№', 'Помещение / зона', 'Наименование', 'Габаритные размеры', 'Кол-во, шт.', 'Примечание', '']);
+  const sec = sd.addRow(['1. Склад ИМН', '1. Склад ИМН', '1. Склад ИМН', '1. Склад ИМН', '1. Склад ИМН', '1. Склад ИМН']);
+  void sec;
+  sd.addRow([1, 'Палата на 2 койки, 22,37 м²', 'Насос шприцевой', '', '≥8', '', 'коммент СД']);
+  sd.addRow([2, 'Палата на 2 койки', 'Ведро', '', 'По потребности', '', '']);
+  sd.addRow(['ИТОГО', 'ИТОГО', 'ИТОГО', 'ИТОГО', 45, 'Без указания стоимости', '']);
+  const ks = wb.addWorksheet('Оснащение');
+  ks.addRow(['Блок', 'Планировка ЦГ', 'Площадь, м²', 'Оснащение', 'Количество']);
+  ks.addRow(['Блок I', 'Ресепшен', 27.5, 'стойка', 1]);
+  ks.addRow(['', '', '', 'кресло', 2]);
+  const f = await readWorkbook(Buffer.from(await wb.xlsx.writeBuffer()), 'x.xlsx');
+  const g = guessSheets([f]);
+  assert.deepEqual(g.sd, ['0:0']); assert.deepEqual(g.ks, ['0:1']);
+  const rows = parseSheet(f.sheets[0].rows, detectColumns(f.sheets[0].rows, 'sd'), 'sd');
+  assert.deepEqual(rows.map((r) => [r.room, r.name, r.qty]), [['Палата на 2 койки', 'Насос шприцевой', 8], ['Палата на 2 койки', 'Ведро', 0]]);
+  assert.equal(rows[0].comment, 'коммент СД');
+  assert.match(rows[1].note, /По потребности/);
+  const k = parseSheet(f.sheets[1].rows, detectColumns(f.sheets[1].rows, 'ks'), 'ks');
+  assert.deepEqual(k.map((r) => [r.room, r.name, r.qty]), [['Ресепшен', 'стойка', 1], ['Ресепшен', 'кресло', 2]]);
+});
