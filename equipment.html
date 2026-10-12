@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Оснащение клиники</title>
+<style>
+  :root { --bg:#fff; --ink:#111; --muted:#767676; --line:#e4e4e4; --soft:#f4f4f4; --radius:12px;
+          --yellow:#FFF2CC; --red:#FFC7CE; --red-ink:#9C0006; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+  header { border-bottom:1px solid var(--ink); padding: 12px 0; margin-bottom: 16px; }
+  h1 { font-size:20px; margin:0; letter-spacing:-.01em; }
+  h2 { font-size:17px; margin:24px 0 8px; }
+  p.hint { color:var(--muted); font-size:14px; margin:4px 0 0; }
+  .card { border:1px solid var(--ink); border-radius:var(--radius); padding:12px 14px; margin-bottom:12px; }
+  .card h3 { margin:0 0 4px; font-size:16px; }
+  .file { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0; }
+  .btn { display:inline-block; border:1px solid var(--ink); background:var(--ink); color:#fff; border-radius:10px;
+         font:inherit; font-weight:700; padding:9px 16px; min-height:44px; cursor:pointer; }
+  .btn.ghost { background:#fff; color:var(--ink); }
+  .btn[disabled] { opacity:.35; cursor:default; }
+  input[type=file] { display:none; }
+  .fname { font-size:14px; color:var(--muted); word-break:break-all; }
+  .sheet { display:grid; grid-template-columns: auto 1fr; gap:4px 10px; padding:8px 0; border-top:1px solid var(--line); align-items:center; }
+  .sheet .sel { grid-column:2; display:flex; gap:8px; flex-wrap:wrap; font-size:14px; }
+  .sheet label.nm { font-weight:600; }
+  .sheet .sel label { display:flex; gap:4px; align-items:center; color:var(--muted); }
+  select, input[type=number], textarea { font:inherit; font-size:14px; border:1px solid var(--ink); border-radius:8px; padding:4px 6px; background:#fff; color:var(--ink); max-width:100%; }
+  input[type=number] { width:64px; }
+  textarea { width:100%; min-height:60px; }
+  .opts { display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+  .warn { font-size:14px; color:var(--red-ink); margin:4px 0 0; }
+  .summary { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .pill { border:1px solid var(--ink); border-radius:999px; padding:4px 12px; font-size:14px; font-weight:600; }
+  .pill.y { background:var(--yellow); } .pill.r { background:var(--red); color:var(--red-ink); border-color:var(--red-ink); }
+  .pill.s { text-decoration: line-through; }
+  .tablewrap { overflow:auto; max-height: 70vh; border:1px solid var(--ink); border-radius:var(--radius); }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:6px 8px; vertical-align:top; }
+  th { position:sticky; top:0; background:var(--soft); text-align:left; z-index:1; border-bottom:1px solid var(--ink); }
+  td.c, th.c { text-align:center; font-variant-numeric: tabular-nums; }
+  td.china { text-decoration: line-through; }
+  td.sd.on { background:var(--yellow); }
+  td.def.on { background:var(--red); color:var(--red-ink); font-weight:700; }
+  tr.strike td.nm { text-decoration: line-through; color:var(--muted); }
+  td.note { color:var(--muted); font-size:13px; min-width:240px; }
+  .filters { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+  .filters button { border:1px solid var(--ink); background:#fff; border-radius:999px; padding:4px 12px; font:inherit; font-size:14px; cursor:pointer; }
+  .filters button.on { background:var(--ink); color:#fff; }
+  .legend { font-size:14px; color:var(--muted); }
+  details { margin-top:12px; } summary { cursor:pointer; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Оснащение клиники: сверка потребности, Китая и СД</h1>
+    <p class="hint">Файлы читаются прямо в браузере и никуда не отправляются. Результат сохраняется на этом устройстве.</p>
+  </header>
+
+  <div class="card" id="card-ref">
+    <h3>1. Эталон — потребность КС</h3>
+    <p class="hint">«КС_ЦГ__Астана…версия 3.xlsx», лист «Свод оборудования» (или «Оснащение»)</p>
+    <div class="file"><label class="btn">Выбрать файл<input type="file" accept=".xlsx" data-kind="ref"></label><span class="fname"></span></div>
+    <div class="sheets"></div>
+  </div>
+  <div class="card" id="card-china">
+    <h3>2. Вычитание — заказ Китай</h3>
+    <p class="hint">«заказ Китай (предварительный, первая часть).xlsx». Берётся колонка «Астана», если её нет — «Количество».</p>
+    <div class="file"><label class="btn">Выбрать файл<input type="file" accept=".xlsx" data-kind="china"></label><span class="fname"></span></div>
+    <div class="sheets"></div>
+  </div>
+  <div class="card" id="card-sd">
+    <h3>3. Вычитание — спецификация СД</h3>
+    <p class="hint">«общий корректированный СД.xlsx», листы «Фарма», «КС», «Реанимация», «общ».</p>
+    <div class="file"><label class="btn">Выбрать файл<input type="file" accept=".xlsx" data-kind="sd"></label><span class="fname"></span></div>
+    <div class="sheets"></div>
+  </div>
+
+  <div class="card">
+    <h3>Параметры сопоставления</h3>
+    <div class="opts">
+      <label>Порог совпадения, % <input type="number" id="thr" min="50" max="100" value="80"></label>
+      <label>Нижняя граница «сомнительных», % <input type="number" id="low" min="30" max="99" value="60"></label>
+    </div>
+    <details><summary>Синонимы (слово = слово, по одному на строке)</summary>
+      <textarea id="syn" spellcheck="false"></textarea>
+    </details>
+  </div>
+
+  <button class="btn" id="run" disabled>Сверить</button>
+  <button class="btn ghost" id="export" disabled>Скачать Excel</button>
+  <span class="fname" id="saved"></span>
+
+  <div id="result" hidden>
+    <h2>Результат</h2>
+    <div class="summary" id="summary"></div>
+    <div class="legend">Китай — <span style="text-decoration:line-through">зачёркнуто</span>, СД — жёлтый, дефицит — красный.</div>
+    <div class="filters" id="filters"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="c">№</th><th>Наименование (КС)</th><th class="c">Нужно</th><th class="c">Китай</th><th class="c">СД</th>
+        <th class="c">Дефицит</th><th>Статус</th><th>Листы СД</th><th>Примечания</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <details id="d-doubt"><summary></summary><div class="tablewrap"><table><thead><tr><th>Позиция из файла</th><th>Источник</th><th class="c">Кол-во</th><th>Ближайшая в КС</th><th class="c">%</th><th></th></tr></thead><tbody id="tb-doubt"></tbody></table></div></details>
+    <details id="d-none"><summary></summary><div class="tablewrap"><table><thead><tr><th>Позиция из файла</th><th>Источник</th><th class="c">Кол-во</th><th>Ближайшая в КС</th><th class="c">%</th><th></th></tr></thead><tbody id="tb-none"></tbody></table></div></details>
+  </div>
+</div>
+
+<script src="lib/exceljs.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+var DEFAULT_SYN = 'диспенсер = дозатор';
+var SHEET_DEFAULTS = {
+  ref:   { on: ['свод оборудования'] },
+  china: { on: ['заказ 1 с филиалами', 'заказ 2'], off: ['заказ 1 с фото'] },
+  sd:    { on: ['фарма', 'кс', 'реанимация', 'общ'] }
+};
+var STORE = 'equip-last-v1';
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var state = { ref: null, china: null, sd: null, result: null, filter: 'all' };
+
+// ---------- helpers ----------
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function cellText(v) {
+  if (v == null) return '';
+  if (typeof v === 'object') {
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    if (v.richText) return v.richText.map(function (t) { return t.text; }).join('');
+    if ('result' in v) return cellText(v.result);
+    if ('text' in v) return cellText(v.text);
+    if ('error' in v) return '';
+  }
+  return String(v).trim();
+}
+function parseNum(s) {
+  if (s === '' || s == null) return NaN;
+  var m = String(s).replace(/\s/g, '').replace(',', '.').match(/^-?\d+(\.\d+)?/);
+  return m ? parseFloat(m[0]) : NaN;
+}
+function letter(i) { var s = ''; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = (i - m - 1) / 26; } return s; }
+function lc(s) { return String(s).toLowerCase().replace(/ё/g, 'е').trim(); }
+
+// ---------- normalization & fuzzy matching ----------
+var STOP = {};
+'шт штук штуки для мм см м кг л и с со на в во из по к от до тип модель вид или не без под при а также'.split(' ').forEach(function (w) { STOP[w] = 1; });
+var SYN = {};
+function stem(t) { return t.length > 5 ? t.slice(0, 5) : t; }
+function tokens(name) {
+  var out = lc(name).replace(/[^a-zа-я0-9]+/g, ' ').split(' ').filter(function (t) {
+    if (!t || STOP[t]) return false;
+    if (/^\d+([xх*×]\d+)*$/.test(t)) return false;            // sizes like 1900х800
+    if (/^\d+(мм|см|м|кг|л|вт|в|шт)$/.test(t)) return false;  // 200мм, 5кг
+    return true;
+  }).map(stem);
+  return out.map(function (t) { return SYN[t] || t; });
+}
+function parseSyn(text) {
+  SYN = {};
+  text.split('\n').forEach(function (line) {
+    var p = line.split('='); if (p.length !== 2) return;
+    var a = tokens(p[0]), b = tokens(p[1]);
+    if (a.length === 1 && b.length === 1) SYN[a[0]] = b[0];
+  });
+}
+function lev(a, b) {
+  var prev = [], i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    var cur = [i];
+    for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function tokSim(a, b) {
+  if (a === b) return 1;
+  if (a.length < 4 || b.length < 4) return 0;
+  var r = 1 - lev(a, b) / Math.max(a.length, b.length);
+  return r >= 0.75 ? r : 0;
+}
+function score(A, B) {
+  if (!A.length || !B.length) return 0;
+  var used = {}, m = 0;
+  A.forEach(function (a) {
+    var best = 0, bi = -1;
+    B.forEach(function (b, i) { if (used[i]) return; var s = tokSim(a, b); if (s > best) { best = s; bi = i; } });
+    if (bi >= 0) { used[bi] = 1; m += best; }
+  });
+  var dice = 2 * m / (A.length + B.length), contain = m / Math.min(A.length, B.length);
+  return 0.5 * dice + 0.5 * contain;
+}
+
+// ---------- reading workbooks ----------
+function findHeader(grid) {
+  for (var i = 0; i < Math.min(grid.length, 30); i++) {
+    if ((grid[i] || []).some(function (c) { return lc(c).indexOf('наименован') >= 0; })) return i;
+  }
+  return 0;
+}
+function defaultCols(grid, hdr, kind) {
+  var row = grid[hdr] || [], name = -1, qty = -1;
+  row.forEach(function (c, i) { if (name < 0 && lc(c).indexOf('наименован') >= 0) name = i; });
+  var prefs = {
+    ref: [/общее.*количество|общее.*кол/, /кол/],
+    china: [/^астана/, /количество/, /кол/],
+    sd: [/кол/]
+  }[kind];
+  prefs.some(function (re) {
+    for (var r = Math.max(0, hdr - 1); r <= hdr + 1 && qty < 0; r++) {
+      if (r !== hdr && kind !== 'china') continue;
+      (grid[r] || []).forEach(function (c, i) { if (qty < 0 && re.test(lc(c))) qty = i; });
+    }
+    return qty >= 0;
+  });
+  return { nameCol: name < 0 ? 0 : name, qtyCol: qty < 0 ? 1 : qty };
+}
+function loadFile(kind, file) {
+  var box = $('#card-' + kind);
+  $('.fname', box).textContent = file.name + ' — читаю…';
+  return file.arrayBuffer().then(function (buf) {
+    var wb = new ExcelJS.Workbook();
+    return wb.xlsx.load(buf);
+  }).then(function (wb) {
+    var sheets = [];
+    wb.eachSheet(function (ws) {
+      var grid = [];
+      ws.eachRow({ includeEmpty: true }, function (row, rn) {
+        var arr = [];
+        row.eachCell({ includeEmpty: true }, function (c, cn) { arr[cn - 1] = cellText(c.value); });
+        grid[rn - 1] = arr;
+      });
+      for (var i = 0; i < grid.length; i++) if (!grid[i]) grid[i] = [];
+      var hdr = findHeader(grid), cols = defaultCols(grid, hdr, kind);
+      var nm = lc(ws.name), d = SHEET_DEFAULTS[kind];
+      var on = d.on.indexOf(nm) >= 0;
+      sheets.push({ name: ws.name, grid: grid, hdr: hdr, nameCol: cols.nameCol, qtyCol: cols.qtyCol, on: on });
+    });
+    if (kind === 'ref' && !sheets.some(function (s) { return s.on; }) && sheets.length) sheets[0].on = true;
+    state[kind] = { file: file.name, sheets: sheets };
+    $('.fname', box).textContent = file.name;
+    renderSheets(kind);
+    updateButtons();
+  }).catch(function (e) {
+    $('.fname', box).textContent = 'Не удалось прочитать файл (' + e.message + '). Нужен .xlsx.';
+  });
+}
+function colOptions(s) {
+  var maxc = 0, i;
+  for (i = 0; i < Math.min(s.grid.length, 80); i++) maxc = Math.max(maxc, s.grid[i].length);
+  var row = s.grid[s.hdr] || [], html = '';
+  for (i = 0; i < maxc; i++) html += '<option value="' + i + '">' + letter(i) + ' · ' + esc((row[i] || '').slice(0, 28)) + '</option>';
+  return html;
+}
+function renderSheets(kind) {
+  var st = state[kind], box = $('#card-' + kind + ' .sheets');
+  box.innerHTML = '';
+  st.sheets.forEach(function (s, idx) {
+    var d = document.createElement('div'); d.className = 'sheet';
+    var type = kind === 'ref' ? 'radio' : 'checkbox';
+    var note = kind === 'china' && SHEET_DEFAULTS.china.off.indexOf(lc(s.name)) >= 0
+      ? ' <span class="fname">(по умолчанию выключен: вероятно, тот же заказ с фото — иначе двойной счёт)</span>' : '';
+    d.innerHTML = '<input type="' + type + '" name="sh-' + kind + '" ' + (s.on ? 'checked' : '') + '>' +
+      '<label class="nm">' + esc(s.name) + note + '</label>' +
+      '<div class="sel"><label>строка шапки <input type="number" min="1" value="' + (s.hdr + 1) + '"></label>' +
+      '<label>название <select class="n">' + colOptions(s) + '</select></label>' +
+      '<label>кол-во <select class="q">' + colOptions(s) + '</select></label></div>';
+    $('select.n', d).value = s.nameCol; $('select.q', d).value = s.qtyCol;
+    $('input[type=' + type + ']', d).onchange = function () {
+      if (kind === 'ref') st.sheets.forEach(function (x) { x.on = false; });
+      s.on = this.checked; updateButtons();
+    };
+    $('input[type=number]', d).onchange = function () {
+      s.hdr = Math.max(0, (parseInt(this.value, 10) || 1) - 1);
+      var c = defaultCols(s.grid, s.hdr, kind); s.nameCol = c.nameCol; s.qtyCol = c.qtyCol; renderSheets(kind);
+    };
+    $('select.n', d).onchange = function () { s.nameCol = +this.value; };
+    $('select.q', d).onchange = function () { s.qtyCol = +this.value; };
+    box.appendChild(d);
+  });
+}
+function extract(kind) {
+  var items = [], skipped = 0;
+  state[kind].sheets.forEach(function (s) {
+    if (!s.on) return;
+    for (var r = s.hdr + 1; r < s.grid.length; r++) {
+      var row = s.grid[r] || [], name = (row[s.nameCol] || '').trim();
+      if (!name || /^(итого|всего)/.test(lc(name))) continue;
+      var q = parseNum(row[s.qtyCol]);
+      if (!(q > 0)) { skipped++; continue; }
+      items.push({ name: name, qty: q, sheet: s.name, row: r + 1, file: kind });
+    }
+  });
+  return { items: items, skipped: skipped };
+}
+
+// ---------- reconciliation ----------
+function reconcile() {
+  parseSyn($('#syn').value);
+  localStorage.setItem('equip-syn', $('#syn').value);
+  var thr = (+$('#thr').value || 80) / 100, low = (+$('#low').value || 60) / 100;
+  var ref = extract('ref'), china = extract('china'), sd = extract('sd');
+
+  // group reference rows with identical normalized names
+  var byKey = {}, rows = [];
+  ref.items.forEach(function (it) {
+    var tk = tokens(it.name), key = tk.slice().sort().join(' ') || lc(it.name);
+    var g = byKey[key];
+    if (!g) { g = byKey[key] = { name: it.name, need: 0, tk: tk, china: 0, sd: 0, sdSheets: [], notes: [], src: [] }; rows.push(g); }
+    g.need += it.qty; g.src.push(it);
+  });
+
+  rows.forEach(function (g, i) { g.n = i + 1; });
+  var doubtful = [], none = [];
+  function place(it, field) {
+    var A = tokens(it.name), best = null, bs = 0, second = 0;
+    rows.forEach(function (g) {
+      var s = score(A, g.tk);
+      if (s > bs) { second = bs; bs = s; best = g; } else if (s > second) second = s;
+    });
+    var rec = { name: it.name, qty: it.qty, from: (field === 'china' ? 'Китай' : 'СД') + ' / ' + it.sheet + ' / стр. ' + it.row,
+                near: best ? best.name : '', pct: Math.round(bs * 100), field: field, target: best ? best.n : 0 };
+    if (best && bs >= thr && !(second >= bs - 0.001 && second >= thr)) {
+      best[field] += it.qty;
+      if (field === 'sd' && best.sdSheets.indexOf(it.sheet) < 0) best.sdSheets.push(it.sheet);
+      best.notes.push((field === 'china' ? 'Китай' : 'СД') + ': «' + it.name + '» ×' + it.qty + ' (' + it.sheet + ', ' + rec.pct + '%)');
+    } else if (best && bs >= low) {
+      rec.tie = second >= bs - 0.001 && second >= thr;
+      rec.note = '? не учтено: ' + (field === 'china' ? 'Китай' : 'СД') + ' «' + it.name + '» ×' + it.qty + ' (' + rec.pct + '%)';
+      doubtful.push(rec);
+      best.notes.push(rec.note);
+    } else none.push(rec);
+  }
+  china.items.forEach(function (it) { place(it, 'china'); });
+  sd.items.forEach(function (it) { place(it, 'sd'); });
+
+  rows.forEach(function (g) {
+    refresh(g);
+    if (g.src.length > 1) g.notes.unshift('В КС объединено строк: ' + g.src.length);
+    delete g.tk;
+  });
+  state.result = {
+    ts: new Date().toISOString(), thr: thr, rows: rows, doubtful: doubtful, none: none,
+    meta: { ref: state.ref.file, china: state.china ? state.china.file : '', sd: state.sd ? state.sd.file : '',
+            skipped: ref.skipped + china.skipped + sd.skipped }
+  };
+  try { localStorage.setItem(STORE, JSON.stringify(state.result)); } catch (e) {}
+  render();
+}
+
+function refresh(g) {
+  g.def = g.need - g.china - g.sd;
+  g.status = g.def <= 0 ? 'Закрыто полностью' : (g.china + g.sd > 0 ? 'Частично закрыто' : 'Не заказано / Дефицит');
+}
+function acceptDoubt(idx) {
+  var res = state.result, rec = res.doubtful[idx], g = res.rows[rec.target - 1];
+  g[rec.field] += rec.qty;
+  if (rec.field === 'sd') {
+    var sh = rec.from.split(' / ')[1];
+    if (g.sdSheets.indexOf(sh) < 0) g.sdSheets.push(sh);
+  }
+  g.notes[g.notes.indexOf(rec.note)] = (rec.field === 'china' ? 'Китай' : 'СД') + ': «' + rec.name + '» ×' + rec.qty + ' (принято вручную, ' + rec.pct + '%)';
+  refresh(g);
+  res.doubtful.splice(idx, 1);
+  try { localStorage.setItem(STORE, JSON.stringify(res)); } catch (e) {}
+  render();
+}
+
+// ---------- rendering ----------
+function cls(g) {
+  if (g.def <= 0 && g.china >= g.need) return 'china';
+  if (g.def <= 0 && g.sd >= g.need) return 'sd';
+  return g.def <= 0 ? 'done' : (g.china + g.sd > 0 ? 'part' : 'miss');
+}
+function render() {
+  var res = state.result; if (!res) return;
+  $('#result').hidden = false; $('#export').disabled = false;
+  $('#saved').textContent = 'Сверка от ' + new Date(res.ts).toLocaleString('ru-RU');
+  var cnt = { done: 0, part: 0, miss: 0 }, need = 0, def = 0;
+  res.rows.forEach(function (g) {
+    cnt[g.def <= 0 ? 'done' : (g.china + g.sd > 0 ? 'part' : 'miss')]++;
+    need += g.need; def += Math.max(0, g.def);
+  });
+  $('#summary').innerHTML =
+    '<span class="pill">Позиций: ' + res.rows.length + '</span>' +
+    '<span class="pill y">Закрыто: ' + cnt.done + '</span>' +
+    '<span class="pill">Частично: ' + cnt.part + '</span>' +
+    '<span class="pill r">Дефицит: ' + cnt.miss + '</span>' +
+    '<span class="pill">К закупу, шт.: ' + def + ' из ' + need + '</span>' +
+    '<span class="pill">Сомнительных: ' + res.doubtful.length + '</span>' +
+    '<span class="pill">Не сопоставлено: ' + res.none.length + '</span>';
+  var fl = [['all', 'Все'], ['miss', 'Дефицит'], ['part', 'Частично'], ['done', 'Закрыто']];
+  $('#filters').innerHTML = fl.map(function (f) { return '<button data-f="' + f[0] + '" class="' + (state.filter === f[0] ? 'on' : '') + '">' + f[1] + '</button>'; }).join('');
+  [].forEach.call($('#filters').querySelectorAll('button'), function (b) { b.onclick = function () { state.filter = b.dataset.f; render(); }; });
+
+  $('#tbody').innerHTML = res.rows.filter(function (g) {
+    var k = g.def <= 0 ? 'done' : (g.china + g.sd > 0 ? 'part' : 'miss');
+    return state.filter === 'all' || state.filter === k;
+  }).map(function (g) {
+    var full = g.def <= 0 && g.china >= g.need;
+    return '<tr class="' + (full ? 'strike' : '') + '"><td class="c">' + g.n + '</td><td class="nm">' + esc(g.name) + '</td>' +
+      '<td class="c">' + g.need + '</td><td class="c china">' + (g.china || '') + '</td>' +
+      '<td class="c sd ' + (g.sd ? 'on' : '') + '">' + (g.sd || '') + '</td>' +
+      '<td class="c def ' + (g.def > 0 ? 'on' : '') + '">' + g.def + '</td>' +
+      '<td>' + g.status + '</td><td>' + esc(g.sdSheets.join(', ')) + '</td><td class="note">' + esc(g.notes.join('\n')).replace(/\n/g, '<br>') + '</td></tr>';
+  }).join('');
+  function side(id, list, title) {
+    var d = $(id); d.hidden = !list.length; $('summary', d).textContent = title + ' (' + list.length + ')';
+    $('tbody', d).innerHTML = list.map(function (r, i) {
+      return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.from) + '</td><td class="c">' + r.qty + '</td><td>' + esc(r.near) + '</td><td class="c">' + r.pct + '</td>' +
+        (r.note ? '<td><button class="btn ghost" style="min-height:32px;padding:2px 10px" data-i="' + i + '">Учесть</button></td>' : '<td></td>') + '</tr>';
+    }).join('');
+    [].forEach.call($('tbody', d).querySelectorAll('button'), function (b) { b.onclick = function () { acceptDoubt(+b.dataset.i); }; });
+  }
+  side('#d-doubt', res.doubtful, 'Сомнительные совпадения — в расчёт не взяты (кнопка «Учесть» — принять вручную)');
+  side('#d-none', res.none, 'Не найдено в КС');
+}
+
+// ---------- Excel export ----------
+function exportXlsx() {
+  var res = state.result; if (!res) return;
+  var wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Сверка оснащения');
+  var heads = ['№ п/п', 'Наименование оборудования (из КС)', 'Требуемое кол-во (КС)', 'Закрыто Китаем', 'Закрыто по СД',
+               'Остаток к закупу / Дефицит', 'Статус покрытия', 'Листы совпадений в СД', 'Примечания / Исходные наименования'];
+  ws.columns = [{ width: 7 }, { width: 52 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 18 }, { width: 24 }, { width: 24 }, { width: 70 }];
+  var hr = ws.addRow(heads);
+  hr.eachCell(function (c) {
+    c.font = { bold: true }; c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+    c.border = { bottom: { style: 'thin' } };
+  });
+  hr.height = 34;
+  var yellow = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2CC' } };
+  var red = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
+  res.rows.forEach(function (g) {
+    var r = ws.addRow([g.n, g.name, g.need, g.china || 0, g.sd || 0, null, g.status, g.sdSheets.join(', '), g.notes.join('\n')]);
+    var i = r.number;
+    r.getCell(6).value = { formula: 'C' + i + '-D' + i + '-E' + i, result: g.def };
+    [1, 3, 4, 5, 6].forEach(function (c) { r.getCell(c).numFmt = '0'; r.getCell(c).alignment = { horizontal: 'center', vertical: 'top' }; });
+    r.getCell(2).alignment = { vertical: 'top', wrapText: true };
+    r.getCell(7).alignment = { vertical: 'top' }; r.getCell(8).alignment = { vertical: 'top', wrapText: true };
+    r.getCell(9).alignment = { vertical: 'top', wrapText: true };
+    if (g.china > 0) r.getCell(4).font = { strike: true };
+    if (g.def <= 0 && g.china >= g.need) for (var c = 1; c <= 8; c++) r.getCell(c).font = { strike: true, color: { argb: 'FF7F7F7F' } };
+    if (g.sd > 0) r.getCell(5).fill = yellow;
+    if (g.def <= 0 && g.china === 0 && g.sd >= g.need) r.getCell(2).fill = yellow;
+    if (g.def > 0) {
+      r.getCell(6).fill = red; r.getCell(6).font = { bold: true, color: { argb: 'FF9C0006' } };
+      if (g.china + g.sd === 0) { r.getCell(2).fill = red; r.getCell(2).font = { color: { argb: 'FF9C0006' } }; }
+    }
+  });
+  ws.views = [{ state: 'frozen', ySplit: 1 }];
+  ws.autoFilter = { from: 'A1', to: { row: 1, column: heads.length } };
+
+  function extra(title, list) {
+    var s = wb.addWorksheet(title);
+    s.columns = [{ width: 50 }, { width: 34 }, { width: 10 }, { width: 50 }, { width: 8 }];
+    var h = s.addRow(['Позиция из файла', 'Источник', 'Кол-во', 'Ближайшая позиция в КС', '%']);
+    h.font = { bold: true }; s.views = [{ state: 'frozen', ySplit: 1 }];
+    list.forEach(function (r) { s.addRow([r.name, r.from, r.qty, r.near, r.pct]); });
+    s.autoFilter = { from: 'A1', to: { row: 1, column: 5 } };
+  }
+  extra('Сомнительные', res.doubtful);
+  extra('Не сопоставлено', res.none);
+  var info = wb.addWorksheet('Параметры');
+  info.columns = [{ width: 30 }, { width: 70 }];
+  [['Дата сверки', new Date(res.ts).toLocaleString('ru-RU')], ['Эталон (КС)', res.meta.ref], ['Заказ Китай', res.meta.china],
+   ['СД', res.meta.sd], ['Порог совпадения, %', Math.round(res.thr * 100)], ['Строк без количества пропущено', res.meta.skipped]]
+    .forEach(function (r) { info.addRow(r); });
+
+  wb.xlsx.writeBuffer().then(function (buf) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = 'Сверка_оснащения_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  });
+}
+
+// ---------- wiring ----------
+function updateButtons() {
+  var ok = state.ref && state.ref.sheets.some(function (s) { return s.on; }) &&
+    ((state.china && state.china.sheets.some(function (s) { return s.on; })) || (state.sd && state.sd.sheets.some(function (s) { return s.on; })));
+  $('#run').disabled = !ok;
+}
+[].forEach.call(document.querySelectorAll('input[type=file]'), function (inp) {
+  inp.onchange = function () { if (inp.files[0]) loadFile(inp.dataset.kind, inp.files[0]); inp.value = ''; };
+});
+$('#run').onclick = reconcile;
+$('#export').onclick = exportXlsx;
+$('#syn').value = localStorage.getItem('equip-syn') || DEFAULT_SYN;
+try { var last = JSON.parse(localStorage.getItem(STORE) || 'null'); if (last && last.rows) { state.result = last; render(); } } catch (e) {}
+
+window.__eq = { tokens: tokens, score: score, parseSyn: parseSyn, state: state };
+})();
+</script>
+</body>
+</html>
