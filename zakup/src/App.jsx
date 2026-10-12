@@ -15,12 +15,13 @@ import { EditInput, Field, Modal } from './components/ui.jsx';
 
 const EMPTY_F = { q: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' };
 
-export default function App() {
-  const store = useStore();
+export default function App({ conn }) {
+  const store = useStore(conn);
   const { state, built, summary, suggestions } = store;
   const [f, setF] = useState(EMPTY_F);
   const [dlg, setDlg] = useState(null); // {type, ...}
   const [menu, setMenu] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const items = useMemo(() => applyFilters(built.items, f), [built.items, f]);
   const showExtras = !f.category && !f.room && !f.supplier && !f.responsible && !f.stage && (!f.status || f.status === 'extra');
@@ -37,7 +38,7 @@ export default function App() {
 
   const doExport = async () => {
     const blob = await exportXlsx(built, state.facts);
-    download(blob, `Закуп оборудования ${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await download(blob, `Закуп оборудования ${new Date().toISOString().slice(0, 10)}.xlsx`, conn.downloads);
   };
 
   return (
@@ -47,7 +48,7 @@ export default function App() {
           <Droplet size={26} className="shrink-0 fill-drop text-drop" />
           <div className="min-w-0 flex-1 leading-tight">
             <h1 className="truncate text-base font-bold sm:text-lg">Закуп оборудования</h1>
-            <div className="truncate text-xs text-white/70">Центр гематологии, Астана · запуск КС</div>
+            <div className="truncate text-xs text-white/70">Центр гематологии, Астана · запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
           </div>
           <button className="btn !border-white/30 !bg-white/10 !text-white hover:!bg-white/20" onClick={() => setDlg({ type: 'import' })}>
             <FileUp size={16} /><span className="hidden sm:inline">Импорт</span>
@@ -61,8 +62,8 @@ export default function App() {
               <div className="absolute right-0 top-full mt-1 w-64 overflow-hidden rounded-lg bg-white py-1 text-sm text-slate-800 shadow-xl" onClick={() => setMenu(false)}>
                 <MenuItem icon={Link2} onClick={() => setDlg({ type: 'links' })}>Сверка и связи{suggestions.length ? ` (${suggestions.length})` : ''}</MenuItem>
                 <MenuItem icon={Plus} onClick={() => setDlg({ type: 'add' })}>Добавить позицию вручную</MenuItem>
-                <MenuItem icon={Wand2} onClick={() => store.setImported(DEMO)}>Загрузить демо-данные</MenuItem>
-                <MenuItem icon={Trash2} danger onClick={() => confirm('Удалить все данные модуля с этого устройства?') && store.reset()}>Очистить всё</MenuItem>
+                {!store.shared && <MenuItem icon={Wand2} onClick={() => store.setImported(DEMO)}>Загрузить демо-данные</MenuItem>}
+                <MenuItem icon={Trash2} danger onClick={() => setConfirmClear(true)}>Очистить всё</MenuItem>
               </div>
             )}
           </div>
@@ -70,14 +71,22 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-[1800px] space-y-3 px-4 py-4">
-        {empty ? (
+        {store.error && (
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+            <span>{store.error}</span>
+            <button className="shrink-0 font-semibold underline" onClick={store.clearError}>Скрыть</button>
+          </div>
+        )}
+        {!store.ready ? (
+          <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Загружаю общую таблицу…</div>
+        ) : empty ? (
           <div className="mx-auto max-w-md rounded-xl border bg-white p-6 text-center">
             <Droplet size={40} className="mx-auto fill-drop text-drop" />
             <h2 className="mt-2 text-lg font-bold text-brand">Загрузите данные</h2>
             <p className="mt-1 text-sm text-slate-600">Импортируйте Excel: «Общая заявка СД», «КС Астана» и «Китай» (лист «Заказ 1»). Приложение соберёт единый список закупа.</p>
             <div className="mt-4 flex flex-col gap-2">
               <button className="btn btn-primary !py-3" onClick={() => setDlg({ type: 'import' })}><FileUp size={18} /> Импорт из Excel</button>
-              <button className="btn" onClick={() => store.setImported(DEMO)}><Wand2 size={16} /> Посмотреть на демо-данных</button>
+              {!store.shared && <button className="btn" onClick={() => store.setImported(DEMO)}><Wand2 size={16} /> Посмотреть на демо-данных</button>}
             </div>
           </div>
         ) : (
@@ -109,6 +118,15 @@ export default function App() {
       )}
       {dlg?.type === 'item' && <ItemDialog item={dlg.item} store={store} onClose={() => setDlg(null)} />}
       {dlg?.type === 'links' && <LinksDialog store={store} onClose={() => setDlg(null)} />}
+      {confirmClear && (
+        <Modal title="Очистить всё?" onClose={() => setConfirmClear(false)}>
+          <p className="text-sm">{store.shared ? 'Данные будут удалены у всех, кто работает с общей таблицей: заявка, потребность, закуп из Китая, связи, цены и поставщики.' : 'Все данные будут удалены с этого устройства.'} Отменить это нельзя.</p>
+          <div className="mt-4 flex gap-2">
+            <button className="btn flex-1" onClick={() => setConfirmClear(false)}>Отмена</button>
+            <button className="btn flex-1 !border-red-700 !bg-red-700 !text-white" onClick={() => { store.reset(); setConfirmClear(false); }}>Удалить всё</button>
+          </div>
+        </Modal>
+      )}
       {dlg?.type === 'add' && <AddDialog onAdd={store.addManual} onClose={() => setDlg(null)} />}
       {dlg?.type === 'extra' && (
         <Modal title={dlg.extra.name} onClose={() => setDlg(null)}>

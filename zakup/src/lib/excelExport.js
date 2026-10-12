@@ -96,7 +96,11 @@ export async function exportXlsx({ items, extras }, facts = {}) {
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 
-export function download(blob, name) {
+export async function download(blob, name, downloads) {
+  // В опубликованной странице скачивание идёт через возможность downloads (с подтверждением у пользователя).
+  if (downloads) {
+    try { await downloads.save({ filename: name, data: blob }); return; } catch (e) { if (e?.code === 'declined') return; }
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;
