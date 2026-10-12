@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-text-size-adjust: 100%; }
+input, select, textarea { font-size: 16px; } /* без автозума на iPhone */
+@media (min-width: 1024px) { input, select, textarea { font-size: 14px; } }
+
+@layer components {
+  .inp { @apply w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand; }
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-40; }
+  .btn-primary { @apply border-brand bg-brand text-white hover:bg-brand-dark active:bg-brand-dark; }
+}
