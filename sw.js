@@ -1,9 +1,11 @@
 // Offline support: the app works without internet after the first visit.
 // Page requests go to the network first so updates arrive; the cache is the fallback.
-var CACHE = 'cleaning-v1';
+var CACHE = 'cleaning-v2';
 var FILES = [
   './',
   'index.html',
+  'equipment.html',
+  'lib/exceljs.min.js',
   'manifest.webmanifest',
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',
