@@ -1,11 +1,11 @@
-// Фирменные цвета Центра гематологии: меняются здесь в одном месте.
+// Фирменные цвета Центра гематологии (взяты с логотипа: сине-серый и оранжевый). Меняются здесь в одном месте.
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: '#12396B', dark: '#0B2547', light: '#E8EEF6' },
-        drop: '#C8102E',
+        brand: { DEFAULT: '#4F5880', dark: '#3C4468', light: '#ECEEF5' },
+        accent: '#D2762F',
       },
       fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'] },
     },

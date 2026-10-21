@@ -23,7 +23,7 @@ export async function exportXlsx({ items, extras }, facts = {}) {
   head.height = 32;
   head.eachCell((c) => {
     c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    c.fill = solid('FF12396B');
+    c.fill = solid('FF4F5880');
     c.alignment = { vertical: 'middle', wrapText: true, horizontal: 'center' };
     c.border = border;
   });

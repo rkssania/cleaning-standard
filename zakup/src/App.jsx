@@ -47,12 +47,12 @@ export default function App({ conn }) {
     <div className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
       <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 bg-brand text-white shadow">
         <div className="mx-auto flex max-w-[1800px] items-center gap-2 px-4 py-2.5">
-          <div className="shrink-0 rounded-lg bg-white px-2.5 py-1.5"><Logo className="h-8 sm:h-9" /></div>
+          <div className="shrink-0 rounded-full bg-white p-1"><Logo variant="mark" className="h-9 sm:h-10" /></div>
           <div className="hidden min-w-0 flex-1 leading-tight sm:block">
-            <h1 className="truncate text-base font-bold sm:text-lg">Закуп оборудования</h1>
-            <div className="truncate text-xs text-white/70">Запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
+            <h1 className="truncate text-base font-bold sm:text-lg">Центр гематологии</h1>
+            <div className="truncate text-xs text-white/75">Закуп оборудования · запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
           </div>
-          <div className="flex-1 sm:hidden" />
+          <div className="flex-1 sm:hidden"><span className="block truncate pl-1 text-sm font-semibold">Центр гематологии</span></div>
           <button className="btn !border-white/30 !bg-white/10 !text-white hover:!bg-white/20" onClick={() => setDlg({ type: 'import' })}>
             <FileUp size={16} /><span className="hidden sm:inline">Импорт</span>
           </button>
@@ -84,7 +84,7 @@ export default function App({ conn }) {
           <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Загружаю общую таблицу…</div>
         ) : empty ? (
           <div className="mx-auto max-w-md rounded-xl border bg-white p-6 text-center">
-            <div className="mx-auto w-fit"><Logo className="h-14" /></div>
+            <div className="mx-auto w-fit"><Logo className="h-28" /></div>
             <h2 className="mt-2 text-lg font-bold text-brand">Загрузите данные</h2>
             <p className="mt-1 text-sm text-slate-600">Импортируйте Excel: «Общая заявка СД», «КС Астана» и «Китай» (лист «Заказ 1»). Приложение соберёт единый список закупа.</p>
             <div className="mt-4 flex flex-col gap-2">

@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 285 60" width="285" height="60" role="img" aria-label="Центр гематологии, Астана">
-  <path d="M30 4C20 17 10 28 10 38a20 20 0 0 0 40 0C50 28 40 17 30 4z" fill="#C8102E"/>
-  <path d="M21 39a9 9 0 0 0 8 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".75"/>
-  <text x="62" y="28" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#12396B">Центр гематологии</text>
-  <text x="62" y="47" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="500" letter-spacing="3" fill="#5B6B80">АСТАНА</text>
-</svg>
