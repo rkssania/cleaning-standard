@@ -17,11 +17,15 @@ export const BADGE_STYLE = {
   extra: 'bg-emerald-700 text-white',
 };
 
+// Простыми словами: Китай = «В процессе», в заявке = «Надо». Пояснение — мелким шрифтом.
+const SHORT = { china: 'В процессе', request: 'Надо', added: 'Добавлено', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { china: 'едет из Китая', request: 'в заявке', added: 'нет в заявке — решить', declined: '', extra: 'нет в потребности' };
+
 export function StatusBadge({ status, partial }) {
   return (
     <span className="inline-flex flex-col">
-      <span className={`inline-block w-fit rounded px-1.5 py-0.5 text-xs font-semibold ${BADGE_STYLE[status]}`}>{STATUS[status]}</span>
-      {partial && <span className="mt-0.5 text-xs font-medium text-slate-700">{partial}</span>}
+      <span className={`inline-block w-fit rounded px-1.5 py-0.5 text-xs font-semibold ${BADGE_STYLE[status]}`}>{SHORT[status]}</span>
+      {(partial || SUB[status]) && <span className="mt-0.5 text-xs font-medium text-slate-700">{partial || SUB[status]}</span>}
     </span>
   );
 }
@@ -77,26 +81,44 @@ export function Field({ label, children, className = '' }) {
   );
 }
 
-/** Бегунок «НАДО?»: Да / ? / Нет. Решение хранится в общей таблице. */
+/** Бегунок «НАДО?»: Да / Нет. Ничего не выбрано — не решено. */
 export function NeedToggle({ value, onChange, compact }) {
-  const opts = [['yes', 'Да'], ['', '?'], ['no', 'Нет']];
-  const color = { yes: 'bg-emerald-600 text-white', '': 'bg-amber-400 text-amber-950', no: 'bg-slate-600 text-white' };
+  const opts = [['yes', 'Да'], ['no', 'Нет']];
+  const color = { yes: 'bg-emerald-600 text-white', no: 'bg-slate-600 text-white' };
   return (
     <div className="inline-flex items-center gap-1.5" role="group" aria-label="Надо?">
       <span className={`font-bold ${compact ? 'text-[11px]' : 'text-xs'}`}>НАДО?</span>
       <span className="inline-flex overflow-hidden rounded-full border border-slate-400 bg-white">
         {opts.map(([k, label]) => (
           <button
-            key={k || 'q'}
+            key={k}
             type="button"
             aria-pressed={value === k}
-            onClick={() => onChange(k)}
-            className={`min-w-[2.1rem] px-2 py-0.5 text-xs font-semibold ${value === k ? color[k] : 'text-slate-600 hover:bg-slate-100'}`}
+            onClick={() => onChange(value === k ? '' : k)}
+            className={`min-w-[2.4rem] px-2.5 py-0.5 text-xs font-semibold ${value === k ? color[k] : 'text-slate-600 hover:bg-slate-100'}`}
           >
             {label}
           </button>
         ))}
       </span>
+      {!value && <span className="text-[11px] font-semibold text-amber-700">не решено</span>}
+    </div>
+  );
+}
+
+/** Бегунок + причина. Решение без причины подсвечено. */
+export function NeedBlock({ it, onEdit, compact }) {
+  return (
+    <div className="space-y-1">
+      <NeedToggle compact={compact} value={it.need} onChange={(v) => onEdit({ need: v })} />
+      {it.need && (
+        <EditInput
+          placeholder={it.need === 'no' ? 'Причина: почему не надо' : 'Причина: почему надо'}
+          value={it.needReason}
+          onCommit={(v) => onEdit({ needReason: v })}
+          className={it.needReason ? '' : '!border-amber-500'}
+        />
+      )}
     </div>
   );
 }

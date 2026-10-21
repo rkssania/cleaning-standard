@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Columns3, Link2, Pencil } from 'lucide-react
 import { STAGES } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
-import { EditInput, NeedToggle, ROW_STYLE, StatusBadge } from './ui.jsx';
+import { EditInput, NeedBlock, ROW_STYLE, StatusBadge } from './ui.jsx';
 
 const strike = (it) => (it.status === 'china' ? 'line-through decoration-2 decoration-green-800/70' : '');
 const spec = (it) => [it.size, ...it.notes].filter(Boolean).join('; ');
@@ -14,18 +14,23 @@ const COLS = [
   { id: 'category', label: 'Категория', def: false, flatOnly: true, w: 'min-w-[11rem]' },
   { id: 'where', label: 'Где (помещения)', def: true, w: 'min-w-[13rem] max-w-[16rem]' },
   { id: 'qty', label: 'Всего', def: true, w: 'w-[5.5rem]', right: true },
-  { id: 'china', label: 'Из Китая', def: true, w: 'w-[4.5rem]', right: true },
-  { id: 'buy', label: 'Докупить', def: true, w: 'w-[5rem]', right: true },
-  { id: 'status', label: 'Статус / НАДО?', def: true, w: 'w-[11.5rem]' },
-  { id: 'supplier', label: 'Поставщик', def: true, w: 'min-w-[10rem]' },
-  { id: 'price', label: 'Цена, ₸', def: true, w: 'min-w-[7rem]', right: true },
-  { id: 'sum', label: 'Сумма, ₸', def: true, w: 'w-[7rem]', right: true },
-  { id: 'stage', label: 'Этап закупа', def: true, w: 'min-w-[9.5rem]' },
+  { id: 'china', label: 'Из Китая', def: false, w: 'w-[4.5rem]', right: true },
+  { id: 'buy', label: 'Докупить', def: false, w: 'w-[5rem]', right: true },
+  { id: 'status', label: 'Статус / НАДО?', def: true, w: 'min-w-[14rem]' },
+  { id: 'supplier', label: 'Поставщик', def: false, w: 'min-w-[10rem]' },
+  { id: 'price', label: 'Цена, ₸', def: false, w: 'min-w-[7rem]', right: true },
+  { id: 'sum', label: 'Сумма, ₸', def: false, w: 'w-[7rem]', right: true },
+  { id: 'stage', label: 'Этап закупа', def: false, w: 'min-w-[9.5rem]' },
   { id: 'resp', label: 'Ответственный', def: false, w: 'min-w-[9rem]' },
   { id: 'deadline', label: 'Срок поставки', def: false, w: 'min-w-[10rem]' },
   { id: 'comment', label: 'Комментарий', def: false, w: 'min-w-[12rem]' },
 ];
-const LS = 'ks-zakup-cols';
+const LS = 'ks-zakup-cols2';
+const PRESETS = [
+  ['Простой', ['where', 'qty', 'status']],
+  ['Закуп', ['where', 'qty', 'china', 'buy', 'status', 'supplier', 'price', 'sum', 'stage']],
+  ['Все', COLS.filter((c) => !c.flatOnly).map((c) => c.id)],
+];
 
 function loadCols() {
   try {
@@ -57,8 +62,8 @@ function Cell({ col, it, edit }) {
     case 'status':
       return (
         <div className="space-y-1">
-          <StatusBadge status={it.status} partial={it.partial} />
-          {it.canDecide && <div><NeedToggle compact value={it.need} onChange={(v) => e({ need: v })} /></div>}
+          <StatusBadge status={it.status} partial={it.partial || (it.status === 'added' && it.need === 'yes' ? 'нет в заявке — надо' : '')} />
+          {it.canDecide && <NeedBlock compact it={it} onEdit={e} />}
         </div>
       );
     case 'supplier': return <EditInput list="suppliers" value={it.supplier} onCommit={(v) => e({ supplier: v })} />;
@@ -103,7 +108,12 @@ function ColumnsMenu({ vis, setVis }) {
     <div className="relative">
       <button className="btn !py-1.5 text-xs" onClick={() => setOpen(!open)}><Columns3 size={14} /> Колонки</button>
       {open && (
-        <div className="absolute right-0 z-40 mt-1 w-56 rounded-lg border bg-white p-2 text-sm shadow-xl">
+        <div className="absolute right-0 z-40 mt-1 w-60 rounded-lg border bg-white p-2 text-sm shadow-xl">
+          <div className="mb-1 flex gap-1">
+            {PRESETS.map(([label, ids]) => (
+              <button key={label} className="flex-1 rounded bg-brand-light px-1 py-1 text-xs font-semibold text-brand" onClick={() => { setVis(new Set(ids)); try { localStorage.setItem(LS, JSON.stringify(ids)); } catch (e) { /* без сохранения */ } }}>{label}</button>
+            ))}
+          </div>
           {COLS.filter((c) => !c.flatOnly).map((c) => (
             <label key={c.id} className="flex items-center gap-2 px-1 py-1">
               <input type="checkbox" checked={vis.has(c.id)} onChange={() => toggle(c.id)} /> {c.label}
@@ -176,7 +186,9 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
   );
 }
 
-function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat, grouped }) {
+function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat, grouped, vis }) {
+  const showMoney = vis.has('supplier') || vis.has('price') || vis.has('stage');
+  const showBuy = vis.has('china') || vis.has('buy');
   const head = (g, dark) => (
     <button onClick={() => toggleCat(g.key || g.cat)} className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm font-bold ${dark ? 'bg-emerald-700 text-white' : 'bg-brand-light text-brand'}`}>
       {collapsed.has(g.key || g.cat) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
@@ -196,25 +208,29 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
                 <button className="shrink-0 rounded bg-white/70 p-2" aria-label="Подробнее" onClick={() => onOpen(it)}><Pencil size={16} /></button>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <StatusBadge status={it.status} partial={it.partial} />
-                {it.canDecide && <NeedToggle value={it.need} onChange={(v) => edit(it.key, { need: v })} />}
+                <StatusBadge status={it.status} partial={it.partial || (it.status === 'added' && it.need === 'yes' ? 'нет в заявке — надо' : '')} />
+                {it.canDecide && <NeedBlock it={it} onEdit={(p) => edit(it.key, p)} />}
               </div>
               {!grouped && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
               {spec(it) && <div className={`mt-1 text-xs ${strike(it)}`}>{spec(it)}</div>}
               {it.rooms && <div className={`mt-1 line-clamp-2 text-xs opacity-80 ${strike(it)}`}>{it.rooms}</div>}
-              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
-                <label>Всего<EditInput type="number" align="right" className={it.qty ? '' : '!border-amber-500 ring-2 ring-amber-300'} value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} /></label>
-                <div>Из Китая<div className="pt-1.5 text-base font-semibold">{it.china}</div></div>
-                <div>Докупить<div className="pt-1.5 text-base font-bold">{it.buy}</div></div>
+              <div className={`mt-2 grid gap-2 text-center text-xs ${showBuy ? 'grid-cols-3' : 'grid-cols-[8rem_1fr]'}`}>
+                <label>Кол-во<EditInput type="number" align="right" className={it.qty ? '' : '!border-amber-500 ring-2 ring-amber-300'} value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} /></label>
+                {showBuy && <div>Из Китая<div className="pt-1.5 text-base font-semibold">{it.china}</div></div>}
+                {showBuy && <div>Докупить<div className="pt-1.5 text-base font-bold">{it.buy}</div></div>}
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                <label>Поставщик<EditInput list="suppliers" value={it.supplier} onCommit={(v) => edit(it.key, { supplier: v })} /></label>
-                <label>Цена за ед., ₸<EditInput type="number" align="right" value={it.price || ''} onCommit={(v) => edit(it.key, { price: v })} /></label>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="rounded bg-white/70 px-2 py-0.5 text-xs">{stageLabel(it.stage)}</span>
-                <span className="font-bold">{it.sum ? `${fmtMoney(it.sum)} ₸` : ''}</span>
-              </div>
+              {showMoney && (
+                <>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                    <label>Поставщик<EditInput list="suppliers" value={it.supplier} onCommit={(v) => edit(it.key, { supplier: v })} /></label>
+                    <label>Цена за ед., ₸<EditInput type="number" align="right" value={it.price || ''} onCommit={(v) => edit(it.key, { price: v })} /></label>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="rounded bg-white/70 px-2 py-0.5 text-xs">{stageLabel(it.stage)}</span>
+                    <span className="font-bold">{it.sum ? `${fmtMoney(it.sum)} ₸` : ''}</span>
+                  </div>
+                </>
+              )}
             </article>
           ))}
         </div>
@@ -248,10 +264,10 @@ export default function ItemsView(props) {
       <div className="flex flex-wrap justify-end gap-2">
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set())}>Развернуть все</button>}
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set(allCats))}>Свернуть все</button>}
-        <span className="hidden lg:block"><ColumnsMenu vis={vis} setVis={setVis} /></span>
+        <ColumnsMenu vis={vis} setVis={setVis} />
       </div>
       <Table {...props} vis={vis} collapsed={collapsed} toggleCat={toggleCat} />
-      <Cards {...props} collapsed={collapsed} toggleCat={toggleCat} />
+      <Cards {...props} vis={vis} collapsed={collapsed} toggleCat={toggleCat} />
     </>
   );
 }

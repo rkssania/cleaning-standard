@@ -5,7 +5,7 @@ import { STATUS, STAGE_LABEL, summarize } from './build.js';
 const FILL = { china: 'FFC6EFCE', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
 const COLS = [
   ['№', 5], ['Наименование', 38], ['Категория', 24], ['Кол-во всего', 10], ['Из Китая, шт', 10], ['Докупить, шт', 10],
-  ['Характеристики / габариты', 28], ['Где (помещения)', 38], ['Статус', 26], ['Надо?', 10], ['Поставщик', 20],
+  ['Характеристики / габариты', 28], ['Где (помещения)', 38], ['Статус', 26], ['Надо? / причина', 22], ['Поставщик', 20],
   ['Цена за ед., тг', 13], ['Сумма, тг', 14], ['Ответственный', 18], ['Срок поставки', 13], ['Этап закупа', 14], ['Комментарий', 30],
 ];
 
@@ -56,7 +56,7 @@ export async function exportXlsx({ items, extras }, facts = {}) {
         it.no, it.name, it.category, it.qty, it.china, it.buy,
         [it.size, ...it.notes].filter(Boolean).join('; '), it.rooms,
         it.partial ? `${STATUS[it.status]} (${it.partial})` : STATUS[it.status],
-        it.canDecide ? { yes: 'Да', no: 'Нет' }[it.need] || '?' : '',
+        it.canDecide ? ({ yes: 'Да', no: 'Нет' }[it.need] || 'не решено') + (it.needReason ? ` — ${it.needReason}` : '') : '',
         it.supplier, it.price || null, null, it.responsible, it.deadline,
         STAGE_LABEL[it.stage], [...it.comments, it.comment].filter(Boolean).join('; '),
       ]);

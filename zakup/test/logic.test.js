@@ -129,8 +129,8 @@ test('«НАДО?»: «Нет» убирает красную позицию и�
   const k = looseKey('Кушетка медицинская');
   const base = buildList(st()).items.find((i) => i.key === k);
   assert.equal(base.status, 'added'); assert.equal(base.canDecide, true); assert.equal(base.need, '');
-  const no = buildList(st({ edits: { [k]: { need: 'no', price: 100 } } })).items.find((i) => i.key === k);
-  assert.equal(no.status, 'declined'); assert.equal(no.buy, 0); assert.equal(no.sum, 0);
+  const no = buildList(st({ edits: { [k]: { need: 'no', needReason: 'есть в наличии', price: 100 } } })).items.find((i) => i.key === k);
+  assert.equal(no.needReason, 'есть в наличии'); assert.equal(no.status, 'declined'); assert.equal(no.buy, 0); assert.equal(no.sum, 0);
   const yes = buildList(st({ edits: { [k]: { need: 'yes' } } })).items.find((i) => i.key === k);
   assert.equal(yes.status, 'added'); assert.equal(yes.buy, 2);
   const sd = buildList(st({ edits: { [looseKey('Принтер лазерный')]: { need: 'no' } } })).items.find((i) => i.name === 'Принтер лазерный');

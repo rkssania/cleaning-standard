@@ -3,7 +3,7 @@ import { Trash2, Unlink } from 'lucide-react';
 import { STAGES, resolveKey } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { EditInput, Field, Modal, NeedToggle, StatusBadge } from './ui.jsx';
+import { EditInput, Field, Modal, NeedBlock, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
 export default function ItemDialog({ item, store, onClose }) {
@@ -21,8 +21,8 @@ export default function ItemDialog({ item, store, onClose }) {
         </div>
         {it.canDecide && (
           <div className="rounded-lg bg-slate-100 p-3">
-            <NeedToggle value={it.need} onChange={(v) => e({ need: v })} />
-            <p className="mt-1 text-xs text-slate-600">Позиции нет в заявке СД и в заказе из Китая. «Нет» убирает её из закупа.</p>
+            <NeedBlock it={it} onEdit={e} />
+            <p className="mt-1 text-xs text-slate-600">Позиции нет в заявке СД и в заказе из Китая. «Нет» убирает её из закупа. Укажите причину решения.</p>
           </div>
         )}
         {it.rooms && <p className="text-sm"><b>Где:</b> {it.rooms}</p>}

@@ -146,6 +146,7 @@ export function buildList(state) {
       status,
       canDecide,
       need,
+      needReason: canDecide ? ed.needReason || '' : '',
       partial: !covered && china > 0 && !declined ? `едет ${china}, докупить ${buy}` : '',
       supplier: ed.supplier || '',
       price,
