@@ -125,7 +125,7 @@ export function parseSheet(rows, map, kind, defaultRoom = '') {
       if (!toNum(qtyRaw)) continue;
       // «…для пациента УК» — позиция для другого филиала, в Астану не едет
       if (/(^|[^а-яё])ук($|[^а-яё])/i.test(name)) continue;
-      out.push({ name, qty: toNum(qtyRaw), price: toNum(get('price')) });
+      out.push({ name, qty: toNum(qtyRaw), price: toNum(get('price')), order: /заказ\s*2/i.test(defaultRoom) ? 2 : 1 });
       continue;
     }
     const roomCell = cleanRoom(get('room'));

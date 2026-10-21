@@ -4,6 +4,7 @@ import { STATUS } from '../lib/build.js';
 
 export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
+  ordering: 'bg-green-100 text-green-900',
   request: 'bg-yellow-100',
   added: 'bg-red-100',
   declined: 'bg-slate-200 text-slate-500',
@@ -11,6 +12,7 @@ export const ROW_STYLE = {
 };
 export const BADGE_STYLE = {
   china: 'bg-green-600 text-white',
+  ordering: 'bg-teal-700 text-white',
   request: 'bg-yellow-400 text-yellow-950',
   added: 'bg-red-600 text-white',
   declined: 'bg-slate-500 text-white',
@@ -18,8 +20,8 @@ export const BADGE_STYLE = {
 };
 
 // Простыми словами: Китай = «В процессе», в заявке = «Надо». Пояснение — мелким шрифтом.
-const SHORT = { china: 'В процессе', request: 'Надо', added: 'Добавлено', declined: 'Не надо', extra: 'Едет из Китая' };
-const SUB = { china: 'едет из Китая', request: 'в заявке', added: 'нет в заявке — решить', declined: '', extra: 'нет в потребности' };
+const SHORT = { china: 'Едет', ordering: 'В процессе оформления', request: 'Надо', added: 'Добавлено', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { china: 'из Китая', ordering: 'Китай, заказ 2', request: 'в заявке', added: 'нет в заявке — надо ли?', declined: '', extra: 'нет в потребности' };
 
 export function StatusBadge({ status, partial }) {
   return (
@@ -86,8 +88,8 @@ export function NeedToggle({ value, onChange, compact }) {
   const opts = [['yes', 'Да'], ['no', 'Нет']];
   const color = { yes: 'bg-emerald-600 text-white', no: 'bg-slate-600 text-white' };
   return (
-    <div className="inline-flex items-center gap-1.5" role="group" aria-label="Надо?">
-      <span className={`font-bold ${compact ? 'text-[11px]' : 'text-xs'}`}>НАДО?</span>
+    <div className="inline-flex items-center gap-1.5" role="group" aria-label="Надо ли?">
+      <span className={`font-bold ${compact ? 'text-[11px]' : 'text-xs'}`}>НАДО ЛИ?</span>
       <span className="inline-flex overflow-hidden rounded-full border border-slate-400 bg-white">
         {opts.map(([k, label]) => (
           <button
@@ -101,7 +103,7 @@ export function NeedToggle({ value, onChange, compact }) {
           </button>
         ))}
       </span>
-      {!value && <span className="text-[11px] font-semibold text-amber-700">не решено</span>}
+      {!value && <span className="rounded-full bg-amber-400 px-1.5 text-xs font-bold text-amber-950">?</span>}
     </div>
   );
 }

@@ -15,10 +15,11 @@ export const STAGE_LABEL = Object.fromEntries(STAGES);
 
 export const STATUS = {
   china: 'Едет из Китая',
+  ordering: 'В процессе оформления',
   request: 'В заявке',
   added: 'Добавлено',
   declined: 'Не надо',
-  extra: 'Едет из Китая, но нет в потребности',
+  extra: 'Из Китая, но нет в потребности — надо ли?',
 };
 
 export const emptyState = () => ({
@@ -91,8 +92,9 @@ export function buildList(state) {
   for (const c of state.china) {
     if (!String(c.name || '').trim()) continue;
     const key = resolveKey(looseKey(c.name), aliases);
-    const e = chinaMap.get(key) || { key, name: String(c.name).trim(), qty: 0, cost: 0, names: [] };
+    const e = chinaMap.get(key) || { key, name: String(c.name).trim(), qty: 0, transit: 0, ordering: 0, cost: 0, names: [] };
     e.qty += toNum(c.qty);
+    if (c.order === 2) e.ordering += toNum(c.qty); else e.transit += toNum(c.qty);
     e.cost += toNum(c.qty) * toNum(c.price);
     e.names.push(String(c.name).trim());
     chinaMap.set(key, e);
@@ -118,13 +120,17 @@ export function buildList(state) {
     const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : b.qty;
     const ch = chinaMap.get(key);
     const china = ch ? ch.qty : 0;
+    const tr = ch ? ch.transit : 0; // едет (Заказ 1)
+    const od = ch ? ch.ordering : 0; // в процессе оформления (Заказ 2)
     const covered = china > 0 && china >= total;
     // «НАДО?» решается только для позиций, которых нет ни в заявке СД, ни в Китае (красные)
     const canDecide = !covered && b.source !== 'sd';
     const need = canDecide ? ed.need || '' : '';
     const declined = need === 'no';
     const buy = declined ? 0 : Math.max(0, total - china);
-    const status = covered ? 'china' : declined ? 'declined' : b.source === 'sd' ? 'request' : 'added';
+    const status = covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? 'request' : 'added';
+    const parts = [tr && `едет ${tr}`, od && `оформляется ${od}`].filter(Boolean);
+    const partial = declined || !china || (covered && parts.length === 1) ? '' : [...parts, buy ? `докупить ${buy}` : ''].filter(Boolean).join(', ');
     const price = toNum(ed.price);
     items.push({
       key,
@@ -147,7 +153,9 @@ export function buildList(state) {
       canDecide,
       need,
       needReason: canDecide ? ed.needReason || '' : '',
-      partial: !covered && china > 0 && !declined ? `едет ${china}, докупить ${buy}` : '',
+      partial,
+      chinaTransit: tr,
+      chinaOrdering: od,
       supplier: ed.supplier || '',
       price,
       sum: buy * price,
@@ -163,13 +171,17 @@ export function buildList(state) {
   items.sort((a, b) => catIdx(a.category) - catIdx(b.category) || a.name.localeCompare(b.name, 'ru'));
   items.forEach((it, i) => (it.no = i + 1));
 
-  // Едет из Китая, но нет в потребности
+  // Из Китая, но нет в потребности — надо ли?
   const extras = [];
   for (const [key, c] of chinaMap) {
     if (base.has(key)) continue;
+    const ed = edits[key] || {};
+    const need = ed.need || '';
     extras.push({
-      key, name: c.name, names: c.names, qty: c.qty, cost: c.cost,
+      key, name: c.name, names: c.names, qty: c.qty, cost: c.cost, transit: c.transit, ordering: c.ordering,
+      kind: c.transit > 0 ? 'transit' : 'ordering',
       price: c.qty ? c.cost / c.qty : 0, status: 'extra', category: classify(c.name),
+      need, needReason: ed.needReason || '', declined: need === 'no',
     });
   }
   extras.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
@@ -183,7 +195,7 @@ export function buildList(state) {
 }
 
 export function summarize(items, facts = {}) {
-  const counts = { china: 0, request: 0, added: 0, declined: 0 };
+  const counts = { china: 0, ordering: 0, request: 0, added: 0, declined: 0 };
   let total = 0;
   const sup = new Map();
   for (const it of items) {

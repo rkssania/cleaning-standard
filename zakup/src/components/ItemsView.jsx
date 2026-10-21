@@ -5,7 +5,7 @@ import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
 import { EditInput, NeedBlock, ROW_STYLE, StatusBadge } from './ui.jsx';
 
-const strike = (it) => (it.status === 'china' ? 'line-through decoration-2 decoration-green-800/70' : '');
+const strike = (it) => (['china', 'ordering'].includes(it.status) ? 'line-through decoration-2 decoration-green-800/70' : '');
 const spec = (it) => [it.size, ...it.notes].filter(Boolean).join('; ');
 const stageLabel = (k) => STAGES.find(([x]) => x === k)?.[1] ?? '';
 
@@ -16,7 +16,7 @@ const COLS = [
   { id: 'qty', label: 'Всего', def: true, w: 'w-[5.5rem]', right: true },
   { id: 'china', label: 'Из Китая', def: false, w: 'w-[4.5rem]', right: true },
   { id: 'buy', label: 'Докупить', def: false, w: 'w-[5rem]', right: true },
-  { id: 'status', label: 'Статус / НАДО?', def: true, w: 'min-w-[14rem]' },
+  { id: 'status', label: 'Статус / НАДО ЛИ?', def: true, w: 'min-w-[14rem]' },
   { id: 'supplier', label: 'Поставщик', def: false, w: 'min-w-[10rem]' },
   { id: 'price', label: 'Цена, ₸', def: false, w: 'min-w-[7rem]', right: true },
   { id: 'sum', label: 'Сумма, ₸', def: false, w: 'w-[7rem]', right: true },
@@ -39,6 +39,8 @@ function loadCols() {
   } catch (e) { /* нет сохранённого — берём по умолчанию */ }
   return new Set(COLS.filter((c) => c.def).map((c) => c.id));
 }
+
+const extraQty = (e) => [e.transit && `едет ${e.transit}`, e.ordering && `в оформлении ${e.ordering}`].filter(Boolean).join(', ') + ' шт';
 
 function groups(items, grouped) {
   if (!grouped) return [{ cat: null, list: items }];
@@ -165,16 +167,20 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
           ))}
           {extras.length > 0 && (
             <>
-              <CatHeader g={{ cat: 'Едет из Китая, но нет в потребности', list: extras }} open={!collapsed.has('__extra')} toggle={() => toggleCat('__extra')} colSpan={span} dark />
+              <CatHeader g={{ cat: 'Из Китая, но нет в потребности — надо ли?', list: extras }} open={!collapsed.has('__extra')} toggle={() => toggleCat('__extra')} colSpan={span} dark />
               {!collapsed.has('__extra') && extras.map((e) => (
-                <tr key={e.key} className={ROW_STYLE.extra}>
+                <tr key={e.key} className={ROW_STYLE[e.declined ? 'declined' : 'extra']}>
                   <td className="sticky left-0 z-10 border-b border-white bg-inherit" />
                   <td className="sticky left-10 z-10 border-b border-white bg-inherit px-2 py-1.5 font-semibold">
                     {e.name}
-                    <div className="text-xs font-normal opacity-70">{e.qty} шт{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
+                    <div className="text-xs font-normal opacity-70">{extraQty(e)}{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
                   </td>
                   <td colSpan={span - 2} className="border-b border-white px-2 py-1.5">
-                    <button className="btn !py-1 text-xs" onClick={() => onLinkExtra(e)}><Link2 size={13} /> Связать с позицией</button>
+                    <div className="flex flex-wrap items-start gap-x-5 gap-y-2">
+                      <StatusBadge status={e.declined ? 'declined' : e.kind === 'ordering' ? 'ordering' : 'china'} partial={e.declined ? '' : 'нет в потребности — надо ли?'} />
+                      <NeedBlock it={e} onEdit={(p) => edit(e.key, p)} compact />
+                      <button className="btn !py-1 text-xs" onClick={() => onLinkExtra(e)}><Link2 size={13} /> Связать с позицией</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -237,11 +243,15 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
       ))}
       {extras.length > 0 && (
         <div className="space-y-2">
-          {head({ key: '__extra', cat: 'Едет из Китая, но нет в потребности', list: extras }, true)}
+          {head({ key: '__extra', cat: 'Из Китая, но нет в потребности — надо ли?', list: extras }, true)}
           {!collapsed.has('__extra') && extras.map((e) => (
-            <article key={e.key} className={`rounded-lg p-3 ${ROW_STYLE.extra}`}>
+            <article key={e.key} className={`rounded-lg p-3 ${ROW_STYLE[e.declined ? 'declined' : 'extra']}`}>
               <div className="font-semibold">{e.name}</div>
-              <div className="mt-1 text-sm">{e.qty} шт{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
+              <div className="mt-1 text-sm">{extraQty(e)}{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
+              <div className="mt-1.5 flex flex-wrap items-start gap-x-4 gap-y-2">
+                <StatusBadge status={e.declined ? 'declined' : e.kind === 'ordering' ? 'ordering' : 'china'} partial={e.declined ? '' : 'нет в потребности — надо ли?'} />
+                <NeedBlock it={e} onEdit={(p) => edit(e.key, p)} />
+              </div>
               <button className="btn mt-2 !py-1.5 text-xs" onClick={() => onLinkExtra(e)}><Link2 size={13} /> Связать с позицией</button>
             </article>
           ))}

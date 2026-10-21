@@ -42,7 +42,7 @@ export default function Filters({ f, setF, items }) {
           <Sel label="Все статусы" value={f.status} onChange={set('status')}>
             {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Sel>
-          <Sel label="НАДО? — любое" value={f.need} onChange={set('need')}>
+          <Sel label="НАДО ЛИ? — любое" value={f.need} onChange={set('need')}>
             <option value="undecided">Не решено</option>
             <option value="yes">Надо</option>
             <option value="no">Не надо</option>

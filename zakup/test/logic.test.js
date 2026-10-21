@@ -77,7 +77,7 @@ test('импорт Excel: автоопределение листов и кол�
   const parsed = parseSheet(sdRows, m, 'sd', 'Общая заявка СД');
   assert.deepEqual(parsed.map((p) => [p.room, p.name, p.qty]), [['Реанимация', 'Кровать', 2], ['Операционная', 'Стол операционный', 1]]);
   const cm = detectColumns(wb.sheets[1].rows, 'china');
-  assert.deepEqual(parseSheet(wb.sheets[1].rows, cm, 'china'), [{ name: 'Кровать', qty: 2, price: 1000 }]);
+  assert.deepEqual(parseSheet(wb.sheets[1].rows, cm, 'china'), [{ name: 'Кровать', qty: 2, price: 1000, order: 1 }]);
 });
 
 test('экспорт: цвета, зачёркивание, формула суммы', async () => {
@@ -160,4 +160,26 @@ test('Китай: «Заказ 2» без колонки «Астана» бер
   assert.deepEqual(g.china, ['0:1', '0:2']);
   const rows = g.china.flatMap((id) => { const sh = f.sheets[+id.split(':')[1]]; const m = detectColumns(sh.rows, 'china', sh.name.includes('с филиалами') ? undefined : /количеств/); return parseSheet(sh.rows, m, 'china'); });
   assert.deepEqual(rows.map((r) => [r.name, r.qty]), [['Кровать', 5], ['Ширма медицинская', 2]]);
+});
+
+test('Китай: «Заказ 1» — едет, «Заказ 2» — в процессе оформления; лишнее из Китая спрашивает «надо ли»', () => {
+  const sd = [{ room: 'А', name: 'Кровать', qty: 10, size: '', note: '', comment: '' }, { room: 'А', name: 'Стол', qty: 2, size: '', note: '', comment: '' }];
+  const china = [
+    { name: 'Кровать', qty: 4, price: 1, order: 1 },
+    { name: 'Кровать', qty: 6, price: 1, order: 2 },
+    { name: 'Стол', qty: 2, price: 1, order: 2 },
+    { name: 'Бахилы', qty: 100, price: 1, order: 2 },
+    { name: 'Лампа', qty: 3, price: 1, order: 1 },
+  ];
+  const b = buildList({ ...emptyState(), sd, china });
+  const bed = b.items.find((i) => i.name === 'Кровать');
+  assert.equal(bed.status, 'ordering'); assert.equal(bed.partial, 'едет 4, оформляется 6'); assert.equal(bed.buy, 0);
+  const table = b.items.find((i) => i.name === 'Стол');
+  assert.equal(table.status, 'ordering'); assert.equal(table.partial, '');
+  const only = buildList({ ...emptyState(), sd, china: [{ name: 'Стол', qty: 2, price: 1, order: 1 }] }).items.find((i) => i.name === 'Стол');
+  assert.equal(only.status, 'china');
+  const ex = Object.fromEntries(b.extras.map((e) => [e.name, e]));
+  assert.equal(ex['Бахилы'].kind, 'ordering'); assert.equal(ex['Лампа'].kind, 'transit'); assert.equal(ex['Лампа'].need, '');
+  const declined = buildList({ ...emptyState(), sd, china, edits: { [looseKey('Лампа')]: { need: 'no', needReason: 'уже есть' } } }).extras.find((e) => e.name === 'Лампа');
+  assert.equal(declined.declined, true); assert.equal(declined.needReason, 'уже есть');
 });

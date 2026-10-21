@@ -25,14 +25,14 @@ export default function App({ conn }) {
   const setGroupedSaved = (v) => { setGrouped(v); try { localStorage.setItem('ks-grouped', v ? '1' : '0'); } catch (e) { /* без сохранения */ } };
 
   const items = useMemo(() => applyFilters(built.items, f), [built.items, f]);
-  const showExtras = !f.need && !f.category && !f.room && !f.supplier && !f.responsible && !f.stage && (!f.status || f.status === 'extra');
+  const showExtras = !f.category && !f.room && !f.supplier && !f.responsible && !f.stage && (!f.status || f.status === 'extra');
   const extras = useMemo(() => {
     if (!showExtras) return [];
     const q = f.q.trim().toLowerCase();
-    return built.extras.filter((e) => !q || e.name.toLowerCase().includes(q));
+    return built.extras.filter((e) => (!q || e.name.toLowerCase().includes(q)) && (!f.need || (f.need === 'undecided' ? !e.need : e.need === f.need)));
   }, [built.extras, f, showExtras]);
   const mainItems = f.status === 'extra' ? [] : items;
-  const undecided = built.items.filter((i) => i.canDecide && !i.need).length;
+  const undecided = built.items.filter((i) => i.canDecide && !i.need).length + built.extras.filter((e) => !e.need).length;
 
   const suppliers = [...new Set(built.items.map((i) => i.supplier).filter(Boolean))];
   const people = [...new Set(built.items.map((i) => i.responsible).filter(Boolean))];
@@ -104,7 +104,7 @@ export default function App({ conn }) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-xs text-slate-500">
                 Показано {mainItems.length} из {built.items.length}
-                {undecided > 0 && <> · <button className="font-semibold text-amber-700 underline" onClick={() => setF({ ...EMPTY_F, need: 'undecided' })}>НАДО? не решено: {undecided}</button></>}
+                {undecided > 0 && <> · <button className="font-semibold text-amber-700 underline" onClick={() => setF({ ...EMPTY_F, need: 'undecided' })}>НАДО ЛИ? не решено: {undecided}</button></>}
                 {extras.length ? ` · из Китая без потребности: ${extras.length}` : ''}
               </div>
               <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white text-xs font-medium">

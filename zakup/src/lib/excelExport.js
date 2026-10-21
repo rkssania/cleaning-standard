@@ -2,7 +2,7 @@
 import { CATEGORIES } from './categories.js';
 import { STATUS, STAGE_LABEL, summarize } from './build.js';
 
-const FILL = { china: 'FFC6EFCE', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
+const FILL = { china: 'FFC6EFCE', ordering: 'FFB7E1CD', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
 const COLS = [
   ['№', 5], ['Наименование', 38], ['Категория', 24], ['Кол-во всего', 10], ['Из Китая, шт', 10], ['Докупить, шт', 10],
   ['Характеристики / габариты', 28], ['Где (помещения)', 38], ['Статус', 26], ['Надо? / причина', 22], ['Поставщик', 20],
@@ -61,15 +61,15 @@ export async function exportXlsx({ items, extras }, facts = {}) {
         STAGE_LABEL[it.stage], [...it.comments, it.comment].filter(Boolean).join('; '),
       ]);
       row.getCell(13).value = { formula: `F${row.number}*L${row.number}`, result: it.sum };
-      style(row, it.status, it.status === 'china');
+      style(row, it.status, ['china', 'ordering'].includes(it.status));
     }
   }
 
   if (extras.length) {
-    section('Едет из Китая, но нет в потребности', 'FFC5E0B3');
+    section('Из Китая, но нет в потребности — надо ли?', 'FFC5E0B3');
     for (const e of extras) {
-      const row = ws.addRow(['', e.name, e.category, '', e.qty, '', '', '', STATUS.extra, '', '', e.price || null, null, '', '', '', '']);
-      style(row, 'extra', false);
+      const row = ws.addRow(['', e.name, e.category, '', e.qty, '', '', '', e.kind === 'ordering' ? STATUS.ordering : STATUS.china, ({ yes: 'Да', no: 'Нет' }[e.need] || '?') + (e.needReason ? ` — ${e.needReason}` : ''), '', e.price || null, null, '', '', '', 'нет в потребности']);
+      style(row, e.declined ? 'declined' : 'extra', false);
     }
   }
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLS.length } };
@@ -79,13 +79,13 @@ export async function exportXlsx({ items, extras }, facts = {}) {
   const sm = wb.addWorksheet('Сводка');
   sm.columns = [{ width: 40 }, { width: 14 }];
   sm.addRow(['Позиции по статусам', 'Шт.']).eachCell((c) => (c.font = { bold: true }));
-  for (const k of ['china', 'request', 'added', 'declined']) {
+  for (const k of ['china', 'ordering', 'request', 'added', 'declined']) {
     sm.addRow([STATUS[k], s.counts[k]]).getCell(1).fill = solid(FILL[k]);
   }
   sm.addRow([STATUS.extra, extras.length]).getCell(1).fill = solid(FILL.extra);
-  const undecided = items.filter((i) => i.canDecide && !i.need).length;
+  const undecided = items.filter((i) => i.canDecide && !i.need).length + extras.filter((e) => !e.need).length;
   sm.addRow([]);
-  sm.addRow(['НАДО? не решено (красные)', undecided]);
+  sm.addRow(['НАДО ЛИ? не решено', undecided]);
 
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
