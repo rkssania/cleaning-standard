@@ -3,7 +3,7 @@ import { Trash2, Unlink } from 'lucide-react';
 import { STAGES, resolveKey } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { EditInput, Field, Modal, NeedBlock, StatusBadge } from './ui.jsx';
+import { EditInput, Field, Modal, NeedBlock, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
 export default function ItemDialog({ item, store, onClose }) {
@@ -16,8 +16,8 @@ export default function ItemDialog({ item, store, onClose }) {
     <Modal title={it.name} onClose={onClose}>
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={it.status} partial={it.partial} />
-          <span className="text-xs text-slate-500">№ {it.no} · {it.source === 'sd' ? 'из заявки СД' : it.source === 'ks' ? 'добавлено из КС Астана' : 'добавлено вручную'}</span>
+          {it.status !== 'added' && <StatusBadge status={it.status} partial={it.partial} />}
+          <span className="text-xs text-slate-500">№ {it.no} · {it.source === 'sd' ? 'из заявки СД' : it.source === 'ks' ? 'нет в заявке СД (из КС Астана)' : 'добавлено вручную'}</span>
         </div>
         {it.canDecide && (
           <div className="rounded-lg bg-slate-100 p-3">
@@ -25,11 +25,11 @@ export default function ItemDialog({ item, store, onClose }) {
             <p className="mt-1 text-xs text-slate-600">Позиции нет в заявке СД и в заказе из Китая. «Нет» убирает её из закупа. Укажите причину решения.</p>
           </div>
         )}
-        {it.rooms && <p className="text-sm"><b>Где:</b> {it.rooms}</p>}
+        {it.roomEntries?.length > 0 && <div><div className="mb-1 text-xs font-medium text-slate-500">Где стоит</div><Rooms entries={it.roomEntries} max={50} /></div>}
         {[it.size, ...it.notes].filter(Boolean).length > 0 && <p className="text-sm"><b>Характеристики:</b> {[it.size, ...it.notes].filter(Boolean).join('; ')}</p>}
         {it.comments.length > 0 && <p className="text-sm"><b>Комментарий СД:</b> {it.comments.join('; ')}</p>}
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <Field label={it.qtyEdited ? 'Всего (изменено)' : 'Всего'}><EditInput type="number" align="right" value={it.qty} onCommit={(v) => e({ qty: v })} /></Field>
+          <div><div className="text-xs text-slate-500">{it.qtyEdited ? 'Кол-во (изменено)' : 'Кол-во'}</div><div className="pt-1"><QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => e({ qty: v })} /></div></div>
           <div><div className="text-xs text-slate-500">Из Китая</div><div className="pt-1.5 text-lg font-semibold">{it.china}</div></div>
           <div><div className="text-xs text-slate-500">Докупить</div><div className="pt-1.5 text-lg font-bold">{it.buy}</div></div>
         </div>

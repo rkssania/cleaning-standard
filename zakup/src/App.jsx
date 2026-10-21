@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
+import { CircleHelp, FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
 import { useStore } from './lib/store.js';
 import { exportXlsx, download } from './lib/excelExport.js';
 import { DEMO } from './lib/demo.js';
@@ -8,6 +8,7 @@ import ItemsView from './components/ItemsView.jsx';
 import ItemDialog from './components/ItemDialog.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
 import LinksDialog from './components/LinksDialog.jsx';
+import Legend from './components/Legend.jsx';
 import LinkPicker from './components/LinkPicker.jsx';
 import Logo from './components/Logo.jsx';
 import { Field, Modal } from './components/ui.jsx';
@@ -47,7 +48,7 @@ export default function App({ conn }) {
     <div className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
       <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 bg-brand text-white shadow">
         <div className="mx-auto flex max-w-[1800px] items-center gap-2 px-4 py-2.5">
-          <div className="shrink-0 rounded-full bg-white p-1"><Logo variant="mark" className="h-9 sm:h-10" /></div>
+          <div className="shrink-0 overflow-hidden rounded-full bg-white p-1 shadow-sm"><Logo variant="mark" className="h-11 w-11 object-contain sm:h-12 sm:w-12" /></div>
           <div className="hidden min-w-0 flex-1 leading-tight sm:block">
             <h1 className="truncate text-base font-bold sm:text-lg">Центр гематологии</h1>
             <div className="truncate text-xs text-white/75">Закуп оборудования · запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
@@ -63,6 +64,7 @@ export default function App({ conn }) {
             <button className="rounded-md p-2 hover:bg-white/10" aria-label="Меню" onClick={() => setMenu(!menu)}><MoreVertical size={20} /></button>
             {menu && (
               <div className="absolute right-0 top-full mt-1 w-64 overflow-hidden rounded-lg bg-white py-1 text-sm text-slate-800 shadow-xl" onClick={() => setMenu(false)}>
+                <MenuItem icon={CircleHelp} onClick={() => setDlg({ type: 'help' })}>Подсказки</MenuItem>
                 <MenuItem icon={Link2} onClick={() => setDlg({ type: 'links' })}>Сверка и связи{suggestions.length ? ` (${suggestions.length})` : ''}</MenuItem>
                 <MenuItem icon={Plus} onClick={() => setDlg({ type: 'add' })}>Добавить позицию вручную</MenuItem>
                 {!store.shared && <MenuItem icon={Wand2} onClick={() => store.setImported(DEMO)}>Загрузить демо-данные</MenuItem>}
@@ -84,7 +86,7 @@ export default function App({ conn }) {
           <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Загружаю общую таблицу…</div>
         ) : empty ? (
           <div className="mx-auto max-w-md rounded-xl border bg-white p-6 text-center">
-            <div className="mx-auto w-fit"><Logo className="h-28" /></div>
+            <div className="mx-auto w-fit"><Logo className="h-40" /></div>
             <h2 className="mt-2 text-lg font-bold text-brand">Загрузите данные</h2>
             <p className="mt-1 text-sm text-slate-600">Импортируйте Excel: «Общая заявка СД», «КС Астана» и «Китай» (лист «Заказ 1»). Приложение соберёт единый список закупа.</p>
             <div className="mt-4 flex flex-col gap-2">
@@ -117,6 +119,7 @@ export default function App({ conn }) {
               grouped={grouped}
               extras={extras}
               edit={store.edit}
+              onHelp={() => setDlg({ type: 'help' })}
               onOpen={(it) => setDlg({ type: 'item', item: it })}
               onLinkExtra={(e) => setDlg({ type: 'extra', extra: e })}
             />
@@ -131,6 +134,7 @@ export default function App({ conn }) {
         <ImportWizard hasData={!empty} onClose={() => setDlg(null)} onImport={(parts) => store.setImported(parts)} />
       )}
       {dlg?.type === 'item' && <ItemDialog item={dlg.item} store={store} onClose={() => setDlg(null)} />}
+      {dlg?.type === 'help' && <Legend onClose={() => setDlg(null)} />}
       {dlg?.type === 'links' && <LinksDialog store={store} onClose={() => setDlg(null)} />}
       {confirmClear && (
         <Modal title="Очистить всё?" onClose={() => setConfirmClear(false)}>

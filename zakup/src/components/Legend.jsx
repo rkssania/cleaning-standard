@@ -1,0 +1,44 @@
+import React from 'react';
+import { Modal } from './ui.jsx';
+
+const ROWS = [
+  ['bg-green-600 text-white', 'Едет', 'из Китая (заказ 1). Покупать не нужно.'],
+  ['bg-teal-700 text-white', 'В процессе оформления', 'Китай, заказ 2. Покупать не нужно.'],
+  ['bg-yellow-400 text-yellow-950', 'В процессе', 'позиция в заявке СД. Закупаем. Если часть уже едет, написано «едет X, докупить Y».'],
+  ['bg-amber-400 text-amber-950', 'НАДО ЛИ? ?', 'позиции нет в заявке и она не заказана. Решите «Да» или «Нет» и напишите причину.'],
+  ['bg-slate-500 text-white', 'Не надо', 'решили не покупать. Позиция серая и в закуп не идёт.'],
+];
+
+export default function Legend({ onClose }) {
+  return (
+    <Modal title="Подсказки" onClose={onClose}>
+      <div className="space-y-4 text-sm">
+        <section>
+          <h3 className="mb-1.5 font-semibold text-brand">Что означают статусы</h3>
+          <ul className="space-y-2">
+            {ROWS.map(([cls, name, text]) => (
+              <li key={name} className="flex items-start gap-2">
+                <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold ${cls}`}>{name}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h3 className="mb-1 font-semibold text-brand">Блок «Из Китая, но нет в потребности»</h3>
+          <p>Это то, что везут или оформляют, но в потребности такого названия не нашли. Если это та же позиция под другим названием, нажмите «Связать с позицией». Если позиции правда нет в потребности, решите «НАДО ЛИ?».</p>
+        </section>
+        <section>
+          <h3 className="mb-1 font-semibold text-brand">Как пользоваться</h3>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>Количество меняйте кнопками − и + или впишите число. «Из заявки: N» вернёт исходное.</li>
+            <li>Метки с булавкой — помещение и сколько штук там нужно. Нажмите на название позиции, чтобы увидеть всё.</li>
+            <li>Поиск находит и по названию из Китая. Фильтры спрятаны за кнопкой «Фильтры».</li>
+            <li>Кнопка «Колонки» включает поставщика, цену, сумму, этап и срок.</li>
+            <li>«Сверка и связи» в меню (три точки) помогает объединить одинаковые позиции с разными названиями.</li>
+          </ul>
+        </section>
+      </div>
+    </Modal>
+  );
+}

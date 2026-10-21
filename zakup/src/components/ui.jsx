@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { MapPin, Minus, Plus, X } from 'lucide-react';
 import { STATUS } from '../lib/build.js';
 
 export const ROW_STYLE = {
@@ -20,12 +20,18 @@ export const BADGE_STYLE = {
 };
 
 // Простыми словами: Китай = «В процессе», в заявке = «Надо». Пояснение — мелким шрифтом.
-const SHORT = { china: 'Едет', ordering: 'В процессе оформления', request: 'Надо', added: 'Добавлено', declined: 'Не надо', extra: 'Едет из Китая' };
-const SUB = { china: 'из Китая', ordering: 'Китай, заказ 2', request: 'в заявке', added: 'нет в заявке — надо ли?', declined: '', extra: 'нет в потребности' };
+const SHORT = { china: 'Едет', ordering: 'В процессе оформления', request: 'В процессе', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { china: 'из Китая', ordering: 'Китай', request: 'в заявке', declined: '', extra: 'нет в потребности' };
+const HINT = {
+  china: 'Едет из Китая (заказ 1). Покупать не нужно.',
+  ordering: 'Китай, заказ 2: в процессе оформления. Покупать не нужно.',
+  request: 'Позиция в заявке СД: в процессе.',
+  declined: 'Решили не покупать. Причина указана рядом.',
+};
 
 export function StatusBadge({ status, partial }) {
   return (
-    <span className="inline-flex flex-col">
+    <span className="inline-flex flex-col" title={HINT[status] || ''}>
       <span className={`inline-block w-fit rounded px-1.5 py-0.5 text-xs font-semibold ${BADGE_STYLE[status]}`}>{SHORT[status]}</span>
       {(partial || SUB[status]) && <span className="mt-0.5 text-xs font-medium text-slate-700">{partial || SUB[status]}</span>}
     </span>
@@ -121,6 +127,49 @@ export function NeedBlock({ it, onEdit, compact }) {
           className={it.needReason ? '' : '!border-amber-500'}
         />
       )}
+    </div>
+  );
+}
+
+/** Количество: компактный счётчик вместо длинного окна. Можно нажимать − и + или вписать число. */
+export function QtyStepper({ value, onCommit, warn }) {
+  const [v, setV] = useState(String(value));
+  useEffect(() => setV(String(value)), [value]);
+  const apply = (n) => { if (Number.isFinite(n) && n >= 0 && n !== value) onCommit(n); };
+  const btn = 'flex h-8 w-7 items-center justify-center text-slate-600 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-30';
+  return (
+    <span className={`inline-flex items-center overflow-hidden rounded-full border bg-white ${warn ? 'border-amber-500 ring-2 ring-amber-300' : 'border-slate-300'}`} title="Количество: нажмите − или +, или впишите число">
+      <button type="button" className={btn} aria-label="Меньше" disabled={value <= 0} onClick={() => apply(Math.max(0, value - 1))}><Minus size={14} /></button>
+      <input
+        className="h-8 w-11 border-0 bg-transparent p-0 text-center text-sm font-bold tabular-nums focus:outline-none"
+        inputMode="decimal"
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => { const n = Number(String(v).replace(',', '.')); if (Number.isNaN(n)) setV(String(value)); else apply(n); }}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        aria-label="Количество"
+      />
+      <button type="button" className={btn} aria-label="Больше" onClick={() => apply(value + 1)}><Plus size={14} /></button>
+    </span>
+  );
+}
+
+/** Где стоит: помещения метками с количеством. */
+export function Rooms({ entries, strike, max = 3 }) {
+  if (!entries?.length) return null;
+  const shown = entries.slice(0, max);
+  const rest = entries.length - shown.length;
+  const all = entries.map(([r, q]) => `${r} — ${q}`).join('\n');
+  return (
+    <div className={`flex flex-wrap gap-1 ${strike ? 'opacity-70' : ''}`} title={all}>
+      {shown.map(([room, qty]) => (
+        <span key={room} className="inline-flex max-w-full items-center gap-1 rounded-md border border-black/10 bg-white/75 px-1.5 py-0.5 text-xs">
+          <MapPin size={11} className="shrink-0 text-accent" />
+          <span className={`truncate ${strike ? 'line-through' : ''}`}>{room}</span>
+          <span className="rounded bg-slate-200 px-1 text-[11px] font-bold tabular-nums">{qty}</span>
+        </span>
+      ))}
+      {rest > 0 && <span className="inline-flex items-center rounded-md bg-slate-200 px-1.5 py-0.5 text-xs font-semibold" title={all}>+{rest}</span>}
     </div>
   );
 }

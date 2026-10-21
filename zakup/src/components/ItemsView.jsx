@@ -1,31 +1,33 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Columns3, Link2, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, CircleHelp, Columns3, Link2, Pencil } from 'lucide-react';
 import { STAGES } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
-import { EditInput, NeedBlock, ROW_STYLE, StatusBadge } from './ui.jsx';
+import { EditInput, NeedBlock, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
 
 const strike = (it) => (['china', 'ordering'].includes(it.status) ? 'line-through decoration-2 decoration-green-800/70' : '');
 const spec = (it) => [it.size, ...it.notes].filter(Boolean).join('; ');
 const stageLabel = (k) => STAGES.find(([x]) => x === k)?.[1] ?? '';
+const extraQty = (e) => [e.transit && `едет ${e.transit}`, e.ordering && `в оформлении ${e.ordering}`].filter(Boolean).join(', ') + ' шт';
+const extraStatus = (e) => (e.declined ? 'declined' : e.kind === 'ordering' ? 'ordering' : 'china');
 
 // Колонки таблицы. Наименование всегда показывается; остальные можно скрыть кнопкой «Колонки».
 const COLS = [
   { id: 'category', label: 'Категория', def: false, flatOnly: true, w: 'min-w-[11rem]' },
-  { id: 'where', label: 'Где (помещения)', def: true, w: 'min-w-[13rem] max-w-[16rem]' },
-  { id: 'qty', label: 'Всего', def: true, w: 'w-[5.5rem]', right: true },
-  { id: 'china', label: 'Из Китая', def: false, w: 'w-[4.5rem]', right: true },
-  { id: 'buy', label: 'Докупить', def: false, w: 'w-[5rem]', right: true },
-  { id: 'status', label: 'Статус / НАДО ЛИ?', def: true, w: 'min-w-[14rem]' },
+  { id: 'where', label: 'Где стоит', hint: 'Помещения и сколько штук в каждом', def: true, w: 'min-w-[14rem] max-w-[20rem]' },
+  { id: 'qty', label: 'Кол-во', hint: 'Сколько нужно всего. Меняется кнопками − и +', def: true, w: 'w-[8.5rem]' },
+  { id: 'china', label: 'Из Китая', hint: 'Сколько уже едет или оформляется', def: false, w: 'w-[4.5rem]', right: true },
+  { id: 'buy', label: 'Докупить', hint: 'Нужно минус то, что уже едет из Китая', def: false, w: 'w-[5rem]', right: true },
+  { id: 'status', label: 'Статус', hint: 'Едет, в процессе оформления, в процессе, НАДО ЛИ?', def: true, w: 'min-w-[14rem]' },
   { id: 'supplier', label: 'Поставщик', def: false, w: 'min-w-[10rem]' },
-  { id: 'price', label: 'Цена, ₸', def: false, w: 'min-w-[7rem]', right: true },
-  { id: 'sum', label: 'Сумма, ₸', def: false, w: 'w-[7rem]', right: true },
+  { id: 'price', label: 'Цена, ₸', hint: 'Цена за единицу', def: false, w: 'min-w-[7rem]', right: true },
+  { id: 'sum', label: 'Сумма, ₸', hint: 'Докупить × цена', def: false, w: 'w-[7rem]', right: true },
   { id: 'stage', label: 'Этап закупа', def: false, w: 'min-w-[9.5rem]' },
   { id: 'resp', label: 'Ответственный', def: false, w: 'min-w-[9rem]' },
   { id: 'deadline', label: 'Срок поставки', def: false, w: 'min-w-[10rem]' },
   { id: 'comment', label: 'Комментарий', def: false, w: 'min-w-[12rem]' },
 ];
-const LS = 'ks-zakup-cols2';
+const LS = 'ks-zakup-cols3';
 const PRESETS = [
   ['Простой', ['where', 'qty', 'status']],
   ['Закуп', ['where', 'qty', 'china', 'buy', 'status', 'supplier', 'price', 'sum', 'stage']],
@@ -40,34 +42,36 @@ function loadCols() {
   return new Set(COLS.filter((c) => c.def).map((c) => c.id));
 }
 
-const extraQty = (e) => [e.transit && `едет ${e.transit}`, e.ordering && `в оформлении ${e.ordering}`].filter(Boolean).join(', ') + ' шт';
-
 function groups(items, grouped) {
   if (!grouped) return [{ cat: null, list: items }];
   return CATEGORIES.map((c) => ({ cat: c, list: items.filter((i) => i.category === c) })).filter((g) => g.list.length);
 }
 
+/** Статус: красные позиции показывают только «НАДО ЛИ?» (один раз), остальные — цветную метку. */
+function StatusCell({ it, onEdit, compact }) {
+  return (
+    <div className="space-y-1">
+      {it.status !== 'added' && <StatusBadge status={it.status} partial={it.partial} />}
+      {it.canDecide && <NeedBlock compact={compact} it={it} onEdit={onEdit} />}
+    </div>
+  );
+}
+
 function Cell({ col, it, edit }) {
   const e = (patch) => edit(it.key, patch);
   switch (col) {
-    case 'where': return <div title={it.rooms} className={`line-clamp-2 text-xs ${strike(it)}`}>{it.rooms}</div>;
+    case 'where': return <Rooms entries={it.roomEntries} strike={strike(it)} />;
     case 'qty':
       return (
-        <div>
-          <EditInput type="number" align="right" className={it.qty ? '' : '!border-amber-500 ring-2 ring-amber-300'} value={it.qty} onCommit={(v) => e({ qty: v })} />
-          {it.qtyEdited && <button className="text-[11px] text-slate-600 underline" onClick={() => e({ qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
+        <div className="space-y-0.5">
+          <QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => e({ qty: v })} />
+          {it.qtyEdited && <button className="block text-[11px] text-slate-600 underline" onClick={() => e({ qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
         </div>
       );
+    case 'category': return <span className="text-xs">{it.category}</span>;
     case 'china': return <span className="tabular-nums">{it.china || ''}</span>;
     case 'buy': return <span className="text-base font-bold tabular-nums">{it.buy}</span>;
-    case 'category': return <span className="text-xs">{it.category}</span>;
-    case 'status':
-      return (
-        <div className="space-y-1">
-          <StatusBadge status={it.status} partial={it.partial || (it.status === 'added' && it.need === 'yes' ? 'нет в заявке — надо' : '')} />
-          {it.canDecide && <NeedBlock compact it={it} onEdit={e} />}
-        </div>
-      );
+    case 'status': return <StatusCell compact it={it} onEdit={e} />;
     case 'supplier': return <EditInput list="suppliers" value={it.supplier} onCommit={(v) => e({ supplier: v })} />;
     case 'price': return <EditInput type="number" align="right" value={it.price || ''} onCommit={(v) => e({ price: v })} />;
     case 'sum': return <span className="whitespace-nowrap font-semibold tabular-nums">{it.sum ? fmtMoney(it.sum) : ''}</span>;
@@ -100,20 +104,16 @@ function CatHeader({ g, open, toggle, colSpan, dark }) {
 
 function ColumnsMenu({ vis, setVis }) {
   const [open, setOpen] = useState(false);
-  const toggle = (id) => {
-    const n = new Set(vis);
-    if (n.has(id)) n.delete(id); else n.add(id);
-    setVis(n);
-    try { localStorage.setItem(LS, JSON.stringify([...n])); } catch (e) { /* без сохранения */ }
-  };
+  const save = (n) => { setVis(n); try { localStorage.setItem(LS, JSON.stringify([...n])); } catch (e) { /* без сохранения */ } };
+  const toggle = (id) => { const n = new Set(vis); if (n.has(id)) n.delete(id); else n.add(id); save(n); };
   return (
     <div className="relative">
-      <button className="btn !py-1.5 text-xs" onClick={() => setOpen(!open)}><Columns3 size={14} /> Колонки</button>
+      <button className="btn !py-1.5 text-xs" onClick={() => setOpen(!open)} title="Какие колонки показывать"><Columns3 size={14} /> Колонки</button>
       {open && (
         <div className="absolute right-0 z-40 mt-1 w-60 rounded-lg border bg-white p-2 text-sm shadow-xl">
           <div className="mb-1 flex gap-1">
             {PRESETS.map(([label, ids]) => (
-              <button key={label} className="flex-1 rounded bg-brand-light px-1 py-1 text-xs font-semibold text-brand" onClick={() => { setVis(new Set(ids)); try { localStorage.setItem(LS, JSON.stringify(ids)); } catch (e) { /* без сохранения */ } }}>{label}</button>
+              <button key={label} className="flex-1 rounded bg-brand-light px-1 py-1 text-xs font-semibold text-brand" onClick={() => save(new Set(ids))}>{label}</button>
             ))}
           </div>
           {COLS.filter((c) => !c.flatOnly).map((c) => (
@@ -139,7 +139,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
           <tr>
             <th className={`${TH} sticky left-0 z-40 w-10 bg-brand text-left`}>№</th>
             <th className={`${TH} sticky left-10 z-40 min-w-[18rem] bg-brand text-left`}>Наименование</th>
-            {cols.map((c) => <th key={c.id} className={`${TH} ${c.right ? 'text-right' : 'text-left'}`}>{c.label}</th>)}
+            {cols.map((c) => <th key={c.id} title={c.hint || ''} className={`${TH} ${c.right ? 'text-right' : 'text-left'}`}>{c.label}</th>)}
             <th className={TH} />
           </tr>
         </thead>
@@ -149,18 +149,18 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
               {g.cat && <CatHeader g={g} open={!collapsed.has(g.cat)} toggle={() => toggleCat(g.cat)} colSpan={span} />}
               {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
                 <tr key={it.key} className={`${ROW_STYLE[it.status]} align-top`}>
-                  <td className="sticky left-0 z-10 border-b border-white bg-inherit px-2 py-1.5 tabular-nums">{it.no}</td>
-                  <td className={`sticky left-10 z-10 min-w-[18rem] max-w-[24rem] border-b border-white bg-inherit px-2 py-1.5 ${strike(it)}`}>
-                    <button className="text-left font-semibold leading-snug hover:underline" onClick={() => onOpen(it)}>{it.name}</button>
+                  <td className="sticky left-0 z-10 border-b border-white bg-inherit px-2 py-2 tabular-nums">{it.no}</td>
+                  <td className={`sticky left-10 z-10 min-w-[18rem] max-w-[24rem] border-b border-white bg-inherit px-2 py-2 ${strike(it)}`}>
+                    <button className="text-left font-semibold leading-snug hover:underline" title="Открыть карточку позиции" onClick={() => onOpen(it)}>{it.name}</button>
                     {spec(it) && <div className="mt-0.5 text-xs font-normal opacity-75">{spec(it)}</div>}
                     {it.aliasNames.length > 0 && <div className="text-xs font-normal opacity-60">= {it.aliasNames.join(', ')}</div>}
                   </td>
                   {cols.map((c) => (
-                    <td key={c.id} className={`border-b border-white px-1.5 py-1.5 ${c.w} ${c.right && !['qty', 'price'].includes(c.id) ? 'text-right' : ''}`}>
+                    <td key={c.id} className={`border-b border-white px-1.5 py-2 ${c.w} ${c.right && !['price'].includes(c.id) ? 'text-right' : ''}`}>
                       <Cell col={c.id} it={it} edit={edit} />
                     </td>
                   ))}
-                  <td className="border-b border-white px-1 py-1.5"><button className="rounded p-1.5 hover:bg-black/10" title="Подробнее" onClick={() => onOpen(it)}><Pencil size={14} /></button></td>
+                  <td className="border-b border-white px-1 py-2"><button className="rounded p-1.5 hover:bg-black/10" title="Подробнее" onClick={() => onOpen(it)}><Pencil size={14} /></button></td>
                 </tr>
               ))}
             </React.Fragment>
@@ -171,15 +171,15 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
               {!collapsed.has('__extra') && extras.map((e) => (
                 <tr key={e.key} className={ROW_STYLE[e.declined ? 'declined' : 'extra']}>
                   <td className="sticky left-0 z-10 border-b border-white bg-inherit" />
-                  <td className="sticky left-10 z-10 border-b border-white bg-inherit px-2 py-1.5 font-semibold">
+                  <td className="sticky left-10 z-10 border-b border-white bg-inherit px-2 py-2 font-semibold">
                     {e.name}
                     <div className="text-xs font-normal opacity-70">{extraQty(e)}{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
                   </td>
-                  <td colSpan={span - 2} className="border-b border-white px-2 py-1.5">
+                  <td colSpan={span - 2} className="border-b border-white px-2 py-2">
                     <div className="flex flex-wrap items-start gap-x-5 gap-y-2">
-                      <StatusBadge status={e.declined ? 'declined' : e.kind === 'ordering' ? 'ordering' : 'china'} partial={e.declined ? '' : 'нет в потребности — надо ли?'} />
+                      <StatusBadge status={extraStatus(e)} partial={e.declined ? '' : 'нет в потребности'} />
                       <NeedBlock it={e} onEdit={(p) => edit(e.key, p)} compact />
-                      <button className="btn !py-1 text-xs" onClick={() => onLinkExtra(e)}><Link2 size={13} /> Связать с позицией</button>
+                      <button className="btn !py-1 text-xs" title="Если это та же позиция под другим названием" onClick={() => onLinkExtra(e)}><Link2 size={13} /> Связать с позицией</button>
                     </div>
                   </td>
                 </tr>
@@ -208,23 +208,22 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
         <div key={g.cat || 'all'} className="space-y-2">
           {g.cat && head(g)}
           {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
-            <article key={it.key} className={`rounded-lg p-3 shadow-sm ${ROW_STYLE[it.status]}`}>
+            <article key={it.key} className={`rounded-xl p-3 shadow-sm ${ROW_STYLE[it.status]}`}>
               <div className="flex items-start justify-between gap-2">
                 <button className={`min-w-0 text-left font-semibold leading-snug ${strike(it)}`} onClick={() => onOpen(it)}><span className="mr-1 font-normal opacity-60">{it.no}.</span>{it.name}</button>
-                <button className="shrink-0 rounded bg-white/70 p-2" aria-label="Подробнее" onClick={() => onOpen(it)}><Pencil size={16} /></button>
+                <button className="shrink-0 rounded-full bg-white/70 p-2" aria-label="Подробнее" onClick={() => onOpen(it)}><Pencil size={15} /></button>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <StatusBadge status={it.status} partial={it.partial || (it.status === 'added' && it.need === 'yes' ? 'нет в заявке — надо' : '')} />
-                {it.canDecide && <NeedBlock it={it} onEdit={(p) => edit(it.key, p)} />}
-              </div>
+              {spec(it) && <div className={`mt-1 text-xs opacity-80 ${strike(it)}`}>{spec(it)}</div>}
               {!grouped && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
-              {spec(it) && <div className={`mt-1 text-xs ${strike(it)}`}>{spec(it)}</div>}
-              {it.rooms && <div className={`mt-1 line-clamp-2 text-xs opacity-80 ${strike(it)}`}>{it.rooms}</div>}
-              <div className={`mt-2 grid gap-2 text-center text-xs ${showBuy ? 'grid-cols-3' : 'grid-cols-[8rem_1fr]'}`}>
-                <label>Кол-во<EditInput type="number" align="right" className={it.qty ? '' : '!border-amber-500 ring-2 ring-amber-300'} value={it.qty} onCommit={(v) => edit(it.key, { qty: v })} /></label>
-                {showBuy && <div>Из Китая<div className="pt-1.5 text-base font-semibold">{it.china}</div></div>}
-                {showBuy && <div>Докупить<div className="pt-1.5 text-base font-bold">{it.buy}</div></div>}
+              <div className="mt-2"><Rooms entries={it.roomEntries} strike={strike(it)} max={4} /></div>
+              <div className="mt-2.5 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                <div className="space-y-0.5">
+                  <QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => edit(it.key, { qty: v })} />
+                  {it.qtyEdited && <button className="block text-[11px] text-slate-600 underline" onClick={() => edit(it.key, { qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
+                </div>
+                <StatusCell it={it} onEdit={(p) => edit(it.key, p)} />
               </div>
+              {showBuy && <div className="mt-2 text-xs">Из Китая: <b>{it.china}</b> · Докупить: <b>{it.buy}</b></div>}
               {showMoney && (
                 <>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
@@ -245,11 +244,11 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
         <div className="space-y-2">
           {head({ key: '__extra', cat: 'Из Китая, но нет в потребности — надо ли?', list: extras }, true)}
           {!collapsed.has('__extra') && extras.map((e) => (
-            <article key={e.key} className={`rounded-lg p-3 ${ROW_STYLE[e.declined ? 'declined' : 'extra']}`}>
+            <article key={e.key} className={`rounded-xl p-3 ${ROW_STYLE[e.declined ? 'declined' : 'extra']}`}>
               <div className="font-semibold">{e.name}</div>
               <div className="mt-1 text-sm">{extraQty(e)}{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
               <div className="mt-1.5 flex flex-wrap items-start gap-x-4 gap-y-2">
-                <StatusBadge status={e.declined ? 'declined' : e.kind === 'ordering' ? 'ordering' : 'china'} partial={e.declined ? '' : 'нет в потребности — надо ли?'} />
+                <StatusBadge status={extraStatus(e)} partial={e.declined ? '' : 'нет в потребности'} />
                 <NeedBlock it={e} onEdit={(p) => edit(e.key, p)} />
               </div>
               <button className="btn mt-2 !py-1.5 text-xs" onClick={() => onLinkExtra(e)}><Link2 size={13} /> Связать с позицией</button>
@@ -272,6 +271,7 @@ export default function ItemsView(props) {
   return (
     <>
       <div className="flex flex-wrap justify-end gap-2">
+        <button className="btn !py-1.5 text-xs" onClick={props.onHelp} title="Что означают цвета и статусы"><CircleHelp size={14} /> Подсказки</button>
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set())}>Развернуть все</button>}
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set(allCats))}>Свернуть все</button>}
         <ColumnsMenu vis={vis} setVis={setVis} />

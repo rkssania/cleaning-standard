@@ -16,8 +16,8 @@ export const STAGE_LABEL = Object.fromEntries(STAGES);
 export const STATUS = {
   china: 'Едет из Китая',
   ordering: 'В процессе оформления',
-  request: 'В заявке',
-  added: 'Добавлено',
+  request: 'В процессе (в заявке)',
+  added: 'НАДО ЛИ?',
   declined: 'Не надо',
   extra: 'Из Китая, но нет в потребности — надо ли?',
 };
@@ -148,6 +148,7 @@ export function buildList(state) {
       china,
       buy,
       rooms: roomsText(b.rooms),
+      roomEntries: [...b.rooms],
       roomList: [...b.rooms.keys()],
       status,
       canDecide,
