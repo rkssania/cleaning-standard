@@ -3,8 +3,6 @@ import { FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'luci
 import { useStore } from './lib/store.js';
 import { exportXlsx, download } from './lib/excelExport.js';
 import { DEMO } from './lib/demo.js';
-import { CATEGORIES } from './lib/categories.js';
-import Summary from './components/Summary.jsx';
 import Filters, { applyFilters } from './components/Filters.jsx';
 import ItemsView from './components/ItemsView.jsx';
 import ItemDialog from './components/ItemDialog.jsx';
@@ -14,7 +12,7 @@ import LinkPicker from './components/LinkPicker.jsx';
 import Logo from './components/Logo.jsx';
 import { Field, Modal } from './components/ui.jsx';
 
-const EMPTY_F = { q: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' };
+const EMPTY_F = { q: '', need: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' };
 
 export default function App({ conn }) {
   const store = useStore(conn);
@@ -23,15 +21,18 @@ export default function App({ conn }) {
   const [dlg, setDlg] = useState(null); // {type, ...}
   const [menu, setMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [grouped, setGrouped] = useState(() => { try { return localStorage.getItem('ks-grouped') !== '0'; } catch (e) { return true; } });
+  const setGroupedSaved = (v) => { setGrouped(v); try { localStorage.setItem('ks-grouped', v ? '1' : '0'); } catch (e) { /* без сохранения */ } };
 
   const items = useMemo(() => applyFilters(built.items, f), [built.items, f]);
-  const showExtras = !f.category && !f.room && !f.supplier && !f.responsible && !f.stage && (!f.status || f.status === 'extra');
+  const showExtras = !f.need && !f.category && !f.room && !f.supplier && !f.responsible && !f.stage && (!f.status || f.status === 'extra');
   const extras = useMemo(() => {
     if (!showExtras) return [];
     const q = f.q.trim().toLowerCase();
     return built.extras.filter((e) => !q || e.name.toLowerCase().includes(q));
   }, [built.extras, f, showExtras]);
   const mainItems = f.status === 'extra' ? [] : items;
+  const undecided = built.items.filter((i) => i.canDecide && !i.need).length;
 
   const suppliers = [...new Set(built.items.map((i) => i.supplier).filter(Boolean))];
   const people = [...new Set(built.items.map((i) => i.responsible).filter(Boolean))];
@@ -94,16 +95,26 @@ export default function App({ conn }) {
         ) : (
           <>
             <h1 className="text-lg font-bold text-brand sm:hidden">Закуп оборудования <span className="text-sm font-normal text-slate-500">· запуск КС</span></h1>
-            <Summary summary={{ ...summary, facts: state.facts }} onFact={store.setFact} extrasCount={built.extras.length} status={f.status} onStatus={(s) => setF({ ...f, status: s })} />
             {suggestions.length > 0 && (
               <button className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-left text-sm" onClick={() => setDlg({ type: 'links' })}>
                 Найдено возможных совпадений названий: <b>{suggestions.length}</b>. Проверить и связать →
               </button>
             )}
             <Filters f={f} setF={setF} items={built.items} />
-            <div className="text-xs text-slate-500">Показано {mainItems.length} из {built.items.length}{extras.length ? ` · из Китая без потребности: ${extras.length}` : ''}</div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs text-slate-500">
+                Показано {mainItems.length} из {built.items.length}
+                {undecided > 0 && <> · <button className="font-semibold text-amber-700 underline" onClick={() => setF({ ...EMPTY_F, need: 'undecided' })}>НАДО? не решено: {undecided}</button></>}
+                {extras.length ? ` · из Китая без потребности: ${extras.length}` : ''}
+              </div>
+              <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white text-xs font-medium">
+                <button className={`px-3 py-1.5 ${grouped ? 'bg-brand text-white' : ''}`} onClick={() => setGroupedSaved(true)}>По категориям</button>
+                <button className={`px-3 py-1.5 ${!grouped ? 'bg-brand text-white' : ''}`} onClick={() => setGroupedSaved(false)}>Одним списком</button>
+              </div>
+            </div>
             <ItemsView
               items={mainItems}
+              grouped={grouped}
               extras={extras}
               edit={store.edit}
               onOpen={(it) => setDlg({ type: 'item', item: it })}

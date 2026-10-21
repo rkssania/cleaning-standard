@@ -31,6 +31,11 @@ export default function Filters({ f, setF, items }) {
         <Sel label="Все статусы" value={f.status} onChange={set('status')}>
           {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Sel>
+        <Sel label="НАДО? — любое" value={f.need} onChange={set('need')}>
+          <option value="undecided">? Не решено</option>
+          <option value="yes">Надо</option>
+          <option value="no">Не надо</option>
+        </Sel>
         <Sel label="Все категории" value={f.category} onChange={set('category')}>
           {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
         </Sel>
@@ -49,7 +54,7 @@ export default function Filters({ f, setF, items }) {
           {STAGES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Sel>
         {active && (
-          <button className="btn !py-1.5" onClick={() => setF({ q: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' })}>
+          <button className="btn !py-1.5" onClick={() => setF({ q: '', need: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' })}>
             <X size={14} /> Сбросить
           </button>
         )}
@@ -62,6 +67,7 @@ export function applyFilters(items, f) {
   const q = f.q.trim().toLowerCase();
   return items.filter((i) =>
     (!f.status || i.status === f.status) &&
+    (!f.need || (f.need === 'undecided' ? i.canDecide && !i.need : i.need === f.need)) &&
     (!f.category || i.category === f.category) &&
     (!f.room || i.roomList.includes(f.room)) &&
     (!f.supplier || (f.supplier === NO_SUPPLIER ? !i.supplier : i.supplier === f.supplier)) &&

@@ -6,6 +6,7 @@ import { DEMO } from '../src/lib/demo.js';
 import { readWorkbook, detectColumns, parseSheet, guessSheets } from '../src/lib/excelImport.js';
 import { exportXlsx } from '../src/lib/excelExport.js';
 import { looseKey } from '../src/lib/normalize.js';
+import { classify } from '../src/lib/categories.js';
 
 const st = (extra = {}) => ({ ...emptyState(), ...DEMO, ...extra });
 
@@ -90,14 +91,14 @@ test('экспорт: цвета, зачёркивание, формула су�
   ws.eachRow((r) => {
     const name = r.getCell(2).value;
     if (name === 'Монитор пациента') green = r.getCell(2);
-    if (name === 'Кровать функциональная') { yellow = r.getCell(2); formula = r.getCell(12).value; }
+    if (name === 'Кровать функциональная') { yellow = r.getCell(2); formula = r.getCell(13).value; }
     if (name === 'Кушетка медицинская') red = r.getCell(2);
   });
   assert.equal(green.font.strike, true);
   assert.equal(green.fill.fgColor.argb, 'FFC6EFCE');
   assert.equal(yellow.fill.fgColor.argb, 'FFFFF2CC'); assert.ok(!yellow.font.strike);
   assert.equal(red.fill.fgColor.argb, 'FFF8CBAD');
-  assert.match(formula.formula, /^F\d+\*K\d+$/); assert.equal(formula.result, 600);
+  assert.match(formula.formula, /^F\d+\*L\d+$/); assert.equal(formula.result, 600);
 });
 
 test('особенности реальных файлов: разделы, «≥8», «По потребности», площадь в помещении, колонка «Астана»', async () => {
@@ -122,4 +123,22 @@ test('особенности реальных файлов: разделы, «�
   assert.match(rows[1].note, /По потребности/);
   const k = parseSheet(f.sheets[1].rows, detectColumns(f.sheets[1].rows, 'ks'), 'ks');
   assert.deepEqual(k.map((r) => [r.room, r.name, r.qty]), [['Ресепшен', 'стойка', 1], ['Ресепшен', 'кресло', 2]]);
+});
+
+test('«НАДО?»: «Нет» убирает красную позицию из закупа, у заявки СД и Китая бегунка нет', () => {
+  const k = looseKey('Кушетка медицинская');
+  const base = buildList(st()).items.find((i) => i.key === k);
+  assert.equal(base.status, 'added'); assert.equal(base.canDecide, true); assert.equal(base.need, '');
+  const no = buildList(st({ edits: { [k]: { need: 'no', price: 100 } } })).items.find((i) => i.key === k);
+  assert.equal(no.status, 'declined'); assert.equal(no.buy, 0); assert.equal(no.sum, 0);
+  const yes = buildList(st({ edits: { [k]: { need: 'yes' } } })).items.find((i) => i.key === k);
+  assert.equal(yes.status, 'added'); assert.equal(yes.buy, 2);
+  const sd = buildList(st({ edits: { [looseKey('Принтер лазерный')]: { need: 'no' } } })).items.find((i) => i.name === 'Принтер лазерный');
+  assert.equal(sd.canDecide, false); assert.equal(sd.status, 'request'); // «НАДО?» только для красных
+});
+
+test('категория «Навигация»', () => {
+  assert.equal(classify('Стенд информационный, 6 карманов А4'), 'Навигация');
+  assert.equal(classify('Табличка на дверь'), 'Навигация');
+  assert.equal(classify('Стол офисный'), 'Мебель и хранение');
 });

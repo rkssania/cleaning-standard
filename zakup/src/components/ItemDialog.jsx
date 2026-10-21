@@ -3,7 +3,7 @@ import { Trash2, Unlink } from 'lucide-react';
 import { STAGES, resolveKey } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { EditInput, Field, Modal, StatusBadge } from './ui.jsx';
+import { EditInput, Field, Modal, NeedToggle, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
 export default function ItemDialog({ item, store, onClose }) {
@@ -19,6 +19,12 @@ export default function ItemDialog({ item, store, onClose }) {
           <StatusBadge status={it.status} partial={it.partial} />
           <span className="text-xs text-slate-500">№ {it.no} · {it.source === 'sd' ? 'из заявки СД' : it.source === 'ks' ? 'добавлено из КС Астана' : 'добавлено вручную'}</span>
         </div>
+        {it.canDecide && (
+          <div className="rounded-lg bg-slate-100 p-3">
+            <NeedToggle value={it.need} onChange={(v) => e({ need: v })} />
+            <p className="mt-1 text-xs text-slate-600">Позиции нет в заявке СД и в заказе из Китая. «Нет» убирает её из закупа.</p>
+          </div>
+        )}
         {it.rooms && <p className="text-sm"><b>Где:</b> {it.rooms}</p>}
         {[it.size, ...it.notes].filter(Boolean).length > 0 && <p className="text-sm"><b>Характеристики:</b> {[it.size, ...it.notes].filter(Boolean).join('; ')}</p>}
         {it.comments.length > 0 && <p className="text-sm"><b>Комментарий СД:</b> {it.comments.join('; ')}</p>}

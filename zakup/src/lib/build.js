@@ -17,6 +17,7 @@ export const STATUS = {
   china: 'Едет из Китая',
   request: 'В заявке',
   added: 'Добавлено',
+  declined: 'Не надо',
   extra: 'Едет из Китая, но нет в потребности',
 };
 
@@ -117,9 +118,13 @@ export function buildList(state) {
     const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : b.qty;
     const ch = chinaMap.get(key);
     const china = ch ? ch.qty : 0;
-    const buy = Math.max(0, total - china);
     const covered = china > 0 && china >= total;
-    const status = covered ? 'china' : b.source === 'sd' ? 'request' : 'added';
+    // «НАДО?» решается только для позиций, которых нет ни в заявке СД, ни в Китае (красные)
+    const canDecide = !covered && b.source !== 'sd';
+    const need = canDecide ? ed.need || '' : '';
+    const declined = need === 'no';
+    const buy = declined ? 0 : Math.max(0, total - china);
+    const status = covered ? 'china' : declined ? 'declined' : b.source === 'sd' ? 'request' : 'added';
     const price = toNum(ed.price);
     items.push({
       key,
@@ -139,7 +144,9 @@ export function buildList(state) {
       rooms: roomsText(b.rooms),
       roomList: [...b.rooms.keys()],
       status,
-      partial: !covered && china > 0 ? `едет ${china}, докупить ${buy}` : '',
+      canDecide,
+      need,
+      partial: !covered && china > 0 && !declined ? `едет ${china}, докупить ${buy}` : '',
       supplier: ed.supplier || '',
       price,
       sum: buy * price,
@@ -175,7 +182,7 @@ export function buildList(state) {
 }
 
 export function summarize(items, facts = {}) {
-  const counts = { china: 0, request: 0, added: 0 };
+  const counts = { china: 0, request: 0, added: 0, declined: 0 };
   let total = 0;
   const sup = new Map();
   for (const it of items) {

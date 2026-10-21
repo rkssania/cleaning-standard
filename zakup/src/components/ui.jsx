@@ -6,12 +6,14 @@ export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
   request: 'bg-yellow-100',
   added: 'bg-red-100',
+  declined: 'bg-slate-200 text-slate-500',
   extra: 'bg-emerald-50',
 };
 export const BADGE_STYLE = {
   china: 'bg-green-600 text-white',
   request: 'bg-yellow-400 text-yellow-950',
   added: 'bg-red-600 text-white',
+  declined: 'bg-slate-500 text-white',
   extra: 'bg-emerald-700 text-white',
 };
 
@@ -72,5 +74,29 @@ export function Field({ label, children, className = '' }) {
       <span className="mb-0.5 block text-xs font-medium text-slate-500">{label}</span>
       {children}
     </label>
+  );
+}
+
+/** Бегунок «НАДО?»: Да / ? / Нет. Решение хранится в общей таблице. */
+export function NeedToggle({ value, onChange, compact }) {
+  const opts = [['yes', 'Да'], ['', '?'], ['no', 'Нет']];
+  const color = { yes: 'bg-emerald-600 text-white', '': 'bg-amber-400 text-amber-950', no: 'bg-slate-600 text-white' };
+  return (
+    <div className="inline-flex items-center gap-1.5" role="group" aria-label="Надо?">
+      <span className={`font-bold ${compact ? 'text-[11px]' : 'text-xs'}`}>НАДО?</span>
+      <span className="inline-flex overflow-hidden rounded-full border border-slate-400 bg-white">
+        {opts.map(([k, label]) => (
+          <button
+            key={k || 'q'}
+            type="button"
+            aria-pressed={value === k}
+            onClick={() => onChange(k)}
+            className={`min-w-[2.1rem] px-2 py-0.5 text-xs font-semibold ${value === k ? color[k] : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </span>
+    </div>
   );
 }
