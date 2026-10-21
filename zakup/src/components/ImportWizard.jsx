@@ -52,7 +52,13 @@ export default function ImportWizard({ hasData, onImport, onClose }) {
   const [err, setErr] = useState('');
 
   const sheetOf = (id) => { const [f, s] = id.split(':').map(Number); return { file: files[f], sheet: files[f].sheets[s] }; };
-  const mapOf = (slot, id) => maps[`${slot}|${id}`] || { ...detectColumns(sheetOf(id).sheet.rows, slot) };
+  const mapOf = (slot, id) => {
+    if (maps[`${slot}|${id}`]) return maps[`${slot}|${id}`];
+    const rows = sheetOf(id).sheet.rows;
+    const m = detectColumns(rows, slot);
+    // Китай: нет колонки «Астана» → весь заказ по колонке «Количество»
+    return slot === 'china' && m.cols.qty === undefined ? detectColumns(rows, slot, /количеств/) : m;
+  };
 
   const onFiles = async (e) => {
     setBusy(true); setErr('');

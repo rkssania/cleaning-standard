@@ -142,3 +142,22 @@ test('категория «Навигация»', () => {
   assert.equal(classify('Табличка на дверь'), 'Навигация');
   assert.equal(classify('Стол офисный'), 'Мебель и хранение');
 });
+
+test('Китай: «Заказ 2» без колонки «Астана» берётся целиком, дубль «с фото» и позиции для УК — нет', async () => {
+  const wb = new ExcelJS.Workbook();
+  const a = wb.addWorksheet('Заказ 1 с фото');
+  a.addRow(['№', 'Наименование', 'Фото', 'Количество', 'Цена', 'Сумма']);
+  a.addRow([1, 'Кровать', '', 11, 180000, 1]);
+  const b = wb.addWorksheet('Заказ 1 с филиалами');
+  b.addRow(['№', 'Наименование', 'Количество', 'Астана', 'УК', 'Цена', 'Сумма']);
+  b.addRow([1, 'Кровать', 11, 5, 6, 180000, 1]);
+  const c = wb.addWorksheet('Заказ 2');
+  c.addRow(['№', 'Наименование', 'Фото', 'Количество', 'Цена', 'Сумма']);
+  c.addRow([1, 'Ширма медицинская', '', 2, 32000, 64000]);
+  c.addRow([2, 'Столик обеденный для пациента УК', '', 24, 61000, 1]);
+  const f = await readWorkbook(Buffer.from(await wb.xlsx.writeBuffer()), 'k.xlsx');
+  const g = guessSheets([f]);
+  assert.deepEqual(g.china, ['0:1', '0:2']);
+  const rows = g.china.flatMap((id) => { const sh = f.sheets[+id.split(':')[1]]; const m = detectColumns(sh.rows, 'china', sh.name.includes('с филиалами') ? undefined : /количеств/); return parseSheet(sh.rows, m, 'china'); });
+  assert.deepEqual(rows.map((r) => [r.name, r.qty]), [['Кровать', 5], ['Ширма медицинская', 2]]);
+});

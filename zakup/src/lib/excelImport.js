@@ -52,8 +52,8 @@ function colMatchers(kind) {
 }
 
 /** Ищет строку заголовков и сопоставляет колонки. Возвращает {headerRow, cols:{field:index}, headers}. */
-export function detectColumns(rows, kind) {
-  const re = colMatchers(kind);
+export function detectColumns(rows, kind, qtyRe) {
+  const re = { ...colMatchers(kind), ...(qtyRe ? { qty: qtyRe } : {}) };
   const fields = FIELDS[kind].map((f) => f[0]);
   let best = { score: 0, headerRow: 0, cols: {} };
   for (let r = 0; r < Math.min(rows.length, 30); r++) {
@@ -123,6 +123,8 @@ export function parseSheet(rows, map, kind, defaultRoom = '') {
     const qtyRaw = get('qty');
     if (kind === 'china') {
       if (!toNum(qtyRaw)) continue;
+      // «…для пациента УК» — позиция для другого филиала, в Астану не едет
+      if (/(^|[^а-яё])ук($|[^а-яё])/i.test(name)) continue;
       out.push({ name, qty: toNum(qtyRaw), price: toNum(get('price')) });
       continue;
     }
@@ -150,14 +152,32 @@ export function parseSheet(rows, map, kind, defaultRoom = '') {
  */
 export function guessSheets(files) {
   const res = { sd: [], ks: [], china: [] };
+  const chinaWithAstana = [];
+  const chinaPlain = [];
   files.forEach((fl, fi) => fl.sheets.forEach((sh, si) => {
     const id = `${fi}:${si}`;
     const m = detectColumns(sh.rows, 'sd');
     const c = detectColumns(sh.rows, 'china');
-    if (c.cols.name !== undefined && c.cols.qty !== undefined) res.china.push(id);
+    const plain = detectColumns(sh.rows, 'china', /количеств/);
+    if (c.cols.name !== undefined && c.cols.qty !== undefined) chinaWithAstana.push(id);
     else if (/оснащен|планировк/.test(norm(sh.rows[m.headerRow]?.join(' ') ?? '')) && m.cols.name !== undefined || /кс.*астан/.test(norm(sh.name))) res.ks.push(id);
     else if (m.cols.name !== undefined && m.cols.qty !== undefined && m.cols.room !== undefined) res.sd.push(id);
+    else if (plain.cols.name !== undefined && plain.cols.qty !== undefined && plain.cols.price !== undefined) chinaPlain.push(id);
   }));
-  res.china = res.china.slice(0, 1);
+  // Лист заказа без колонки «Астана» (например «Заказ 2») берём целиком,
+  // но не если он повторяет уже выбранный (например «Заказ 1 с фото» дублирует «с филиалами»).
+  const namesOf = (id) => {
+    const [a, b] = id.split(':').map(Number);
+    const sh = files[a].sheets[b];
+    const c = detectColumns(sh.rows, 'china', /количеств/);
+    return new Set(sh.rows.slice(c.headerRow + 1).map((r) => norm(r[c.cols.name])).filter(Boolean));
+  };
+  const chosen = chinaWithAstana.map(namesOf);
+  res.china = [...chinaWithAstana];
+  for (const id of chinaPlain) {
+    const n = namesOf(id);
+    const overlap = [...n].filter((x) => chosen.some((s) => s.has(x))).length;
+    if (n.size && overlap / n.size < 0.5) { res.china.push(id); chosen.push(n); }
+  }
   return res;
 }
