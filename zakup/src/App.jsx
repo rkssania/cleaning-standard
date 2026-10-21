@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Droplet, FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
+import { FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
 import { useStore } from './lib/store.js';
 import { exportXlsx, download } from './lib/excelExport.js';
 import { DEMO } from './lib/demo.js';
@@ -11,7 +11,8 @@ import ItemDialog from './components/ItemDialog.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
 import LinksDialog from './components/LinksDialog.jsx';
 import LinkPicker from './components/LinkPicker.jsx';
-import { EditInput, Field, Modal } from './components/ui.jsx';
+import Logo from './components/Logo.jsx';
+import { Field, Modal } from './components/ui.jsx';
 
 const EMPTY_F = { q: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' };
 
@@ -45,11 +46,12 @@ export default function App({ conn }) {
     <div className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
       <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 bg-brand text-white shadow">
         <div className="mx-auto flex max-w-[1800px] items-center gap-2 px-4 py-2.5">
-          <Droplet size={26} className="shrink-0 fill-drop text-drop" />
-          <div className="min-w-0 flex-1 leading-tight">
+          <div className="shrink-0 rounded-lg bg-white px-2.5 py-1.5"><Logo className="h-8 sm:h-9" /></div>
+          <div className="hidden min-w-0 flex-1 leading-tight sm:block">
             <h1 className="truncate text-base font-bold sm:text-lg">Закуп оборудования</h1>
-            <div className="truncate text-xs text-white/70">Центр гематологии, Астана · запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
+            <div className="truncate text-xs text-white/70">Запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
           </div>
+          <div className="flex-1 sm:hidden" />
           <button className="btn !border-white/30 !bg-white/10 !text-white hover:!bg-white/20" onClick={() => setDlg({ type: 'import' })}>
             <FileUp size={16} /><span className="hidden sm:inline">Импорт</span>
           </button>
@@ -81,7 +83,7 @@ export default function App({ conn }) {
           <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Загружаю общую таблицу…</div>
         ) : empty ? (
           <div className="mx-auto max-w-md rounded-xl border bg-white p-6 text-center">
-            <Droplet size={40} className="mx-auto fill-drop text-drop" />
+            <div className="mx-auto w-fit"><Logo className="h-14" /></div>
             <h2 className="mt-2 text-lg font-bold text-brand">Загрузите данные</h2>
             <p className="mt-1 text-sm text-slate-600">Импортируйте Excel: «Общая заявка СД», «КС Астана» и «Китай» (лист «Заказ 1»). Приложение соберёт единый список закупа.</p>
             <div className="mt-4 flex flex-col gap-2">
@@ -91,9 +93,10 @@ export default function App({ conn }) {
           </div>
         ) : (
           <>
+            <h1 className="text-lg font-bold text-brand sm:hidden">Закуп оборудования <span className="text-sm font-normal text-slate-500">· запуск КС</span></h1>
             <Summary summary={{ ...summary, facts: state.facts }} onFact={store.setFact} extrasCount={built.extras.length} status={f.status} onStatus={(s) => setF({ ...f, status: s })} />
             {suggestions.length > 0 && (
-              <button className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-left text-sm" onClick={() => setDlg({ type: 'links' })}>
+              <button className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-left text-sm" onClick={() => setDlg({ type: 'links' })}>
                 Найдено возможных совпадений названий: <b>{suggestions.length}</b>. Проверить и связать →
               </button>
             )}

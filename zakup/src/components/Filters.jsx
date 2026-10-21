@@ -7,7 +7,7 @@ export const NO_SUPPLIER = '__none';
 
 function Sel({ value, onChange, label, children }) {
   return (
-    <select className="inp !w-auto min-w-[8.5rem] flex-1 sm:flex-none" value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
+    <select className="inp !w-auto min-w-[8rem] flex-1 sm:flex-none" value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
       <option value="">{label}</option>
       {children}
     </select>
@@ -22,12 +22,12 @@ export default function Filters({ f, setF, items }) {
   const set = (k) => (v) => setF({ ...f, [k]: v });
   const active = Object.values(f).some(Boolean);
   return (
-    <div className="space-y-2">
-      <div className="relative">
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="relative min-w-[14rem] flex-1 lg:max-w-sm">
         <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input className="inp !pl-8" placeholder="Поиск по названию" value={f.q} onChange={(e) => set('q')(e.target.value)} />
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="contents">
         <Sel label="Все статусы" value={f.status} onChange={set('status')}>
           {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Sel>
