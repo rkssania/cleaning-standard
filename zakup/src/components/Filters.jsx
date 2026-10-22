@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { STAGES, STATUS } from '../lib/build.js';
-import { CATEGORIES } from '../lib/categories.js';
 
 export const NO_SUPPLIER = '__none';
 
@@ -17,6 +16,7 @@ function Sel({ value, onChange, label, children }) {
 export default function Filters({ f, setF, items }) {
   const [open, setOpen] = useState(false); // фильтры спрятаны, пока их не раскрыли
   const uniq = (fn) => [...new Set(items.flatMap(fn).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+  const cats = [...new Set(items.map((i) => i.category))];
   const rooms = uniq((i) => i.roomList);
   const suppliers = uniq((i) => [i.supplier]);
   const people = uniq((i) => [i.responsible]);
@@ -48,7 +48,7 @@ export default function Filters({ f, setF, items }) {
             <option value="no">Не надо</option>
           </Sel>
           <Sel label="Все категории" value={f.category} onChange={set('category')}>
-            {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            {cats.map((c) => <option key={c}>{c}</option>)}
           </Sel>
           <Sel label="Все помещения" value={f.room} onChange={set('room')}>
             {rooms.map((c) => <option key={c}>{c}</option>)}

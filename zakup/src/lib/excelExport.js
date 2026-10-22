@@ -47,7 +47,7 @@ export async function exportXlsx({ items, extras }, facts = {}) {
     row.getCell(13).numFmt = '#,##0';
   };
 
-  for (const cat of CATEGORIES) {
+  for (const cat of [...new Set(items.map((i) => i.category))]) {
     const list = items.filter((i) => i.category === cat);
     if (!list.length) continue;
     section(cat, 'FFD9E1F2');

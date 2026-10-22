@@ -81,6 +81,7 @@ function useRemote(db, canWrite) {
   const [editDocs, setEditDocs] = useState(null);
   const [aliasDocs, setAliasDocs] = useState(null);
   const [manualDocs, setManualDocs] = useState(null);
+  const [sectionDocs, setSectionDocs] = useState([]);
   const [fileDocs, setFileDocs] = useState([]); // метаданные вложений (сами файлы читаются по запросу)
   const [error, setError] = useState('');
   const queues = useRef(new Map());
@@ -96,6 +97,7 @@ function useRemote(db, canWrite) {
       db.collection('aliases').onSnapshot(list(setAliasDocs, (x) => x), fail),
       db.collection('manual').onSnapshot(list(setManualDocs, (x) => x), fail),
       db.collection('files').onSnapshot(list(setFileDocs, (x) => x), fail),
+      db.collection('sections').onSnapshot(list(setSectionDocs, (x) => x), fail),
     ];
     return () => subs.forEach((u) => u());
   }, [db]);
@@ -112,11 +114,12 @@ function useRemote(db, canWrite) {
     }
     for (const d of aliasDocs || []) { st.aliases[d.from] = d.to; st.aliasNames[d.from] = d.name; }
     st.manual = (manualDocs || []).map(({ id, ...m }) => ({ ...m, id }));
+    st.sections = sectionDocs;
     st.facts = meta?.facts || {};
     st.settings = { dedupePit: meta?.dedupePit ?? true };
     st.importedAt = meta?.importedAt || null;
     return st;
-  }, [db, meta, rowDocs, editDocs, aliasDocs, manualDocs]);
+  }, [db, meta, rowDocs, editDocs, aliasDocs, manualDocs, sectionDocs]);
 
   // Записи в один документ идут по очереди; ошибки показываются, а не теряются.
   const run = useCallback((path, fn) => {
@@ -178,7 +181,7 @@ function useRemote(db, canWrite) {
       }),
       getFile: async (id) => (await db.doc(`filedata/${id}`).get()).data()?.data || '',
       reset: () => run('reset', async () => {
-        const all = [['rows', rowDocs], ['edits', editDocs], ['aliases', aliasDocs], ['manual', manualDocs], ['files', fileDocs], ['filedata', fileDocs]];
+        const all = [['rows', rowDocs], ['edits', editDocs], ['aliases', aliasDocs], ['manual', manualDocs], ['files', fileDocs], ['filedata', fileDocs], ['sections', sectionDocs]];
         for (const [c, docs] of all) for (const d of docs || []) await db.doc(`${c}/${d.id}`).delete();
         await db.doc('meta/state').delete();
       }),

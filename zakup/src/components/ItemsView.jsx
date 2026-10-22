@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, CircleHelp, Columns3, EyeOff, Link2, Paperclip, Pencil } from 'lucide-react';
 import { STAGES } from '../lib/build.js';
-import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
 import { EditInput, NeedBlock, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
 
@@ -45,7 +44,8 @@ function loadCols() {
 
 function groups(items, grouped) {
   if (!grouped) return [{ cat: null, list: items }];
-  return CATEGORIES.map((c) => ({ cat: c, list: items.filter((i) => i.category === c) })).filter((g) => g.list.length);
+  // категории в порядке появления: сначала обычные, потом разделы по ТЗ
+  return [...new Set(items.map((i) => i.category))].map((c) => ({ cat: c, list: items.filter((i) => i.category === c) }));
 }
 
 /** Статус: красные позиции показывают только «НАДО ЛИ?» (один раз), остальные — цветную метку. */
@@ -93,7 +93,7 @@ function CatHeader({ g, open, toggle, colSpan, dark }) {
   return (
     <tr>
       <td colSpan={colSpan} className="sticky left-0 p-0">
-        <button onClick={toggle} className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-bold ${dark ? 'bg-emerald-700 text-white' : 'bg-brand-light text-brand'}`}>
+        <button onClick={toggle} data-cat={g.cat} className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-bold ${dark ? 'bg-emerald-700 text-white' : 'bg-brand-light text-brand'}`}>
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           <span>{g.cat}</span>
           <span className={`font-normal ${dark ? 'text-white/80' : 'text-slate-500'}`}>· {g.list.length}</span>
@@ -198,7 +198,7 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
   const showMoney = vis.has('supplier') || vis.has('price') || vis.has('stage');
   const showBuy = vis.has('china') || vis.has('buy');
   const head = (g, dark) => (
-    <button onClick={() => toggleCat(g.key || g.cat)} className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm font-bold ${dark ? 'bg-emerald-700 text-white' : 'bg-brand-light text-brand'}`}>
+    <button onClick={() => toggleCat(g.key || g.cat)} data-cat={g.cat} className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm font-bold ${dark ? 'bg-emerald-700 text-white' : 'bg-brand-light text-brand'}`}>
       {collapsed.has(g.key || g.cat) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
       <span className="flex-1">{g.cat}</span>
       <span className="font-normal opacity-80">{g.list.length}</span>
@@ -266,13 +266,38 @@ export default function ItemsView(props) {
   const [vis, setVis] = useState(loadCols);
   const [collapsed, setCollapsed] = useState(new Set());
   const toggleCat = (c) => setCollapsed((s) => { const n = new Set(s); if (n.has(c)) n.delete(c); else n.add(c); return n; });
-  const allCats = [...CATEGORIES, '__extra'];
+  const sectionList = [...props.items.filter((i) => i.source === 'section').reduce((m, i) => m.set(i.category, (m.get(i.category) || 0) + 1), new Map())];
+  // перейти к разделу: раскрыть и прокрутить
+  const goTo = (title) => {
+    setCollapsed((s) => { const n = new Set(s); n.delete(title); return n; });
+    setTimeout(() => {
+      const el = [...document.querySelectorAll('[data-cat]')].filter((e) => e.dataset.cat === title && e.offsetParent !== null)[0];
+      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    }, 60);
+  };
+  const allCats = [...new Set(props.items.map((i) => i.category)), '__extra'];
+  // разделы по ТЗ (мебель, навигация) при первом появлении свёрнуты, их можно раскрыть
+  const seenSections = useRef(new Set());
+  useEffect(() => {
+    const fresh = [...new Set(props.items.filter((i) => i.source === 'section').map((i) => i.category))].filter((c) => !seenSections.current.has(c));
+    if (!fresh.length) return;
+    fresh.forEach((c) => seenSections.current.add(c));
+    setCollapsed((s) => new Set([...s, ...fresh]));
+  }, [props.items]);
   if (!props.items.length && !props.extras.length) {
     return <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Ничего не найдено</div>;
   }
   return (
     <>
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {sectionList.length > 0 && (
+          <div className="mr-auto flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-slate-500">Разделы по ТЗ:</span>
+            {sectionList.map(([title, n]) => (
+              <button key={title} className="rounded-full border border-brand/40 bg-brand-light px-2.5 py-1 text-xs font-semibold text-brand" onClick={() => goTo(title)}>{title} · {n}</button>
+            ))}
+          </div>
+        )}
         {props.removedCount > 0 && <button className="btn !py-1.5 text-xs" onClick={props.onRemoved} title="Позиции, которые вы убрали из списка"><EyeOff size={14} /> Убранные · {props.removedCount}</button>}
         <button className="btn !py-1.5 text-xs" onClick={props.onHelp} title="Что означают цвета и статусы"><CircleHelp size={14} /> Подсказки</button>
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set())}>Развернуть все</button>}

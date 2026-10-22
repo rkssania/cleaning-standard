@@ -151,7 +151,7 @@ export default function ItemDialog({ item, store, onClose }) {
             <select className="inp" value={it.stage} onChange={(ev) => e({ stage: ev.target.value })}>{STAGES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </Field>
           <Field label="Категория">
-            <select className="inp" value={it.category} onChange={(ev) => e({ category: ev.target.value })}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
+            <select className="inp" value={it.category} onChange={(ev) => e({ category: ev.target.value })}>{[...new Set([...CATEGORIES, it.category])].map((c) => <option key={c}>{c}</option>)}</select>
           </Field>
         </div>
         <Field label="Комментарий"><EditInput value={it.comment} onCommit={(v) => e({ comment: v })} /></Field>

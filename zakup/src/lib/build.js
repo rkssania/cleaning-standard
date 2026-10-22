@@ -32,6 +32,7 @@ export const emptyState = () => ({
   aliasNames: {}, // looseKey -> исходное название (для списка связей)
   edits: {}, // key -> {qty,supplier,price,responsible,deadline,stage,comment,category}
   manual: [], // {id,name,size,qty,room}
+  sections: [], // отдельные разделы по ТЗ: {id,title,responsible,order,rows:[{name,qty,size,spec,note,places:[[место,кол-во]]}]}
   facts: {}, // поставщик -> фактически оплаченная сумма (вводится вручную)
   settings: { dedupePit: true },
   importedAt: null,
@@ -185,8 +186,34 @@ export function buildList(state) {
       manualId: b.manualId,
     });
   }
-  const catIdx = (c) => { const i = CATEGORIES.indexOf(c); return i < 0 ? 99 : i; };
-  items.sort((a, b) => catIdx(a.category) - catIdx(b.category) || a.name.localeCompare(b.name, 'ru'));
+  // Разделы по ТЗ (мебель, навигация): строки как позиции списка, в порядке ТЗ, после обычных категорий
+  const sections = [...(state.sections || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  sections.forEach((sec, si) => (sec.rows || []).forEach((r, ri) => {
+    const key = `sec:${sec.id}:${ri}`;
+    const ed = edits[key] || {};
+    const places = (r.places || []).map(([p, q]) => [String(p), toNum(q)]);
+    if (ed.removed === true) {
+      removed.push({ key, name: ed.name || r.name, qty: toNum(r.qty), rooms: places.map(([p, q]) => `${p} — ${q}`).join('; '), sources: [sec.title] });
+      return;
+    }
+    const roomMap = Array.isArray(ed.rooms) && ed.rooms.length ? new Map(ed.rooms.map(([a, q]) => [String(a), toNum(q)])) : new Map(places);
+    const baseQty = roomMap.size && Array.isArray(ed.rooms) && ed.rooms.length ? [...roomMap.values()].reduce((a, x) => a + x, 0) : toNum(r.qty);
+    const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : baseQty;
+    const done = ed.done === true;
+    const price = toNum(ed.price);
+    const buy = done ? 0 : total;
+    items.push({
+      key, name: ed.name || r.name, origName: r.name, done, aliasNames: [], size: r.size || '', notes: [r.spec, r.note].filter(Boolean), comments: [],
+      category: ed.category || sec.title, baseQty, qty: total, qtyEdited: ed.qty !== undefined && ed.qty !== '', sdQty: 0, ksQty: 0, china: 0, buy,
+      rooms: roomsText(roomMap), roomEntries: [...roomMap], roomsEdited: roomMap.size > 0 && Array.isArray(ed.rooms) && ed.rooms.length > 0, sources: [sec.title], roomList: [...roomMap.keys()],
+      status: done ? 'done' : 'toorder', canDecide: false, need: '', needReason: '', partial: done ? '' : 'по ТЗ', chinaTransit: 0, chinaOrdering: 0,
+      supplier: ed.supplier || '', price, sum: buy * price, responsible: ed.responsible || sec.responsible || '', deadline: ed.deadline || '', stage: ed.stage || 'not_started',
+      comment: ed.comment || '', source: 'section', sectionId: sec.id, ord: si * 1000 + ri,
+    });
+  }));
+  const secIdx = new Map(sections.map((s, i) => [s.title, 100 + i]));
+  const catIdx = (c) => { const i = CATEGORIES.indexOf(c); return i >= 0 ? i : secIdx.get(c) ?? 99; };
+  items.sort((a, b) => catIdx(a.category) - catIdx(b.category) || (a.ord != null && b.ord != null ? a.ord - b.ord : a.name.localeCompare(b.name, 'ru')));
   items.forEach((it, i) => (it.no = i + 1));
 
   // Из Китая, но нет в потребности — надо ли?

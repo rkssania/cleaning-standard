@@ -221,3 +221,21 @@ test('правки позиции: убрать, переименовать, п�
   const back = buildList({ ...emptyState(), sd, edits: { [kw]: { removed: '' } } });
   assert.equal(back.items.length, 2);
 });
+
+test('разделы по ТЗ: мебель и навигация после обычных категорий, свой ответственный, порядок ТЗ', () => {
+  const sd = [{ src: 'КС', room: 'А', name: 'Стол', qty: 1, size: '', note: '', comment: '' }];
+  const sections = [
+    { id: 'm', title: 'Мебель (заказ)', responsible: 'Раимбекова С.К.', order: 1, rows: [
+      { name: 'Шкаф Б', qty: 5, size: '2600×700×500', places: [['Палата 2', 1], ['Палата 14', 1]] }, { name: 'Шкаф А', qty: 1, places: [] }] },
+  ];
+  const b = buildList({ ...emptyState(), sd, sections });
+  assert.deepEqual(b.items.map((i) => i.name), ['Стол', 'Шкаф Б', 'Шкаф А']); // порядок ТЗ, а не по алфавиту
+  const w = b.items[1];
+  assert.equal(w.category, 'Мебель (заказ)'); assert.equal(w.responsible, 'Раимбекова С.К.'); assert.equal(w.qty, 5);
+  assert.equal(w.status, 'toorder'); assert.equal(w.partial, 'по ТЗ'); assert.equal(w.canDecide, false);
+  const k = w.key;
+  const b2 = buildList({ ...emptyState(), sd, sections, edits: { [k]: { removed: true } } });
+  assert.equal(b2.items.length, 2); assert.equal(b2.removed[0].name, 'Шкаф Б');
+  const b3 = buildList({ ...emptyState(), sd, sections, edits: { [k]: { responsible: 'Иванов' } } });
+  assert.equal(b3.items[1].responsible, 'Иванов');
+});
