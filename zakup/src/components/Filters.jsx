@@ -80,6 +80,6 @@ export function applyFilters(items, f) {
     (!f.supplier || (f.supplier === NO_SUPPLIER ? !i.supplier : i.supplier === f.supplier)) &&
     (!f.responsible || (f.responsible === NO_SUPPLIER ? !i.responsible : i.responsible === f.responsible)) &&
     (!f.stage || i.stage === f.stage) &&
-    (!q || i.name.toLowerCase().includes(q) || i.aliasNames.some((n) => n.toLowerCase().includes(q)))
+    (!q || i.name.toLowerCase().includes(q) || (i.origName || '').toLowerCase().includes(q) || i.aliasNames.some((n) => n.toLowerCase().includes(q)))
   );
 }

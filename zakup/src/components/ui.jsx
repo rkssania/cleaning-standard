@@ -5,6 +5,7 @@ import { STATUS } from '../lib/build.js';
 export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
   ordering: 'bg-green-100 text-green-900',
+  done: 'bg-emerald-200 text-emerald-950',
   toorder: 'bg-orange-100',
   request: 'bg-yellow-100',
   added: 'bg-red-100',
@@ -14,6 +15,7 @@ export const ROW_STYLE = {
 export const BADGE_STYLE = {
   china: 'bg-green-600 text-white',
   ordering: 'bg-teal-700 text-white',
+  done: 'bg-emerald-800 text-white',
   toorder: 'bg-orange-500 text-white',
   request: 'bg-yellow-400 text-yellow-950',
   added: 'bg-red-600 text-white',
@@ -22,9 +24,10 @@ export const BADGE_STYLE = {
 };
 
 // Простыми словами: Китай = «В процессе», в заявке = «Надо». Пояснение — мелким шрифтом.
-const SHORT = { china: 'Едет', ordering: 'В процессе оформления', toorder: 'Надо заказать', request: 'В процессе', declined: 'Не надо', extra: 'Едет из Китая' };
-const SUB = { china: 'из Китая', ordering: 'Китай', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
+const SHORT = { done: 'Готово', china: 'Едет', ordering: 'В процессе оформления', toorder: 'Надо заказать', request: 'В процессе', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { done: 'установлено', china: 'из Китая', ordering: 'Китай', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
 const HINT = {
+  done: 'Уже сделано и установлено. Подтверждение можно приложить в карточке.',
   china: 'Едет из Китая (заказ 1). Покупать не нужно.',
   ordering: 'Китай, заказ 2: в процессе оформления. Покупать не нужно.',
   toorder: 'Есть и в заявке СД, и в потребности КС Астана. Нужно заказывать.',

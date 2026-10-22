@@ -120,6 +120,8 @@ export default function App({ conn }) {
               extras={extras}
               edit={store.edit}
               onHelp={() => setDlg({ type: 'help' })}
+              removedCount={built.removed.length}
+              onRemoved={() => setDlg({ type: 'removed' })}
               onOpen={(it) => setDlg({ type: 'item', item: it })}
               onLinkExtra={(e) => setDlg({ type: 'extra', extra: e })}
             />
@@ -135,6 +137,20 @@ export default function App({ conn }) {
       )}
       {dlg?.type === 'item' && <ItemDialog item={dlg.item} store={store} onClose={() => setDlg(null)} />}
       {dlg?.type === 'help' && <Legend onClose={() => setDlg(null)} />}
+      {dlg?.type === 'removed' && (
+        <Modal title={`Убранные позиции · ${built.removed.length}`} onClose={() => setDlg(null)}>
+          <p className="mb-2 text-xs text-slate-500">Эти позиции не показываются в списке и не идут в закуп. Нажмите «Вернуть», чтобы вернуть позицию.</p>
+          <ul className="divide-y">
+            {built.removed.map((r) => (
+              <li key={r.key} className="flex items-center justify-between gap-2 py-2 text-sm">
+                <span className="min-w-0"><b>{r.name}</b><span className="block truncate text-xs text-slate-500">{r.rooms}</span></span>
+                <button className="btn !py-1 text-xs" onClick={() => store.edit(r.key, { removed: '' })}>Вернуть</button>
+              </li>
+            ))}
+            {!built.removed.length && <li className="py-2 text-slate-500">Ничего не убрано</li>}
+          </ul>
+        </Modal>
+      )}
       {dlg?.type === 'links' && <LinksDialog store={store} onClose={() => setDlg(null)} />}
       {confirmClear && (
         <Modal title="Очистить всё?" onClose={() => setConfirmClear(false)}>

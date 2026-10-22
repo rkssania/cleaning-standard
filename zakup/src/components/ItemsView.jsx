@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CircleHelp, Columns3, Link2, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, CircleHelp, Columns3, EyeOff, Link2, Paperclip, Pencil } from 'lucide-react';
 import { STAGES } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
-import { EditInput, NeedBlock, QtyStepper, ROW_STYLE, Rooms, Sources, StatusBadge } from './ui.jsx';
+import { EditInput, NeedBlock, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
 
+const FilesMark = ({ it }) => (it.files?.length ? <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-xs font-normal text-slate-600" title="Есть вложения"><Paperclip size={12} />{it.files.length}</span> : null);
 const strike = (it) => (['china', 'ordering'].includes(it.status) ? 'line-through decoration-2 decoration-green-800/70' : '');
 const spec = (it) => [it.size, ...it.notes].filter(Boolean).join('; ');
 const stageLabel = (k) => STAGES.find(([x]) => x === k)?.[1] ?? '';
@@ -152,9 +153,9 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
                   <td className="sticky left-0 z-10 border-b border-white bg-inherit px-2 py-2 tabular-nums">{it.no}</td>
                   <td className={`sticky left-10 z-10 min-w-[18rem] max-w-[24rem] border-b border-white bg-inherit px-2 py-2 ${strike(it)}`}>
                     <button className="text-left font-semibold leading-snug hover:underline" title="Открыть карточку позиции" onClick={() => onOpen(it)}>{it.name}</button>
+                    <FilesMark it={it} />
                     {spec(it) && <div className="mt-0.5 text-xs font-normal opacity-75">{spec(it)}</div>}
                     {it.aliasNames.length > 0 && <div className="text-xs font-normal opacity-60">= {it.aliasNames.join(', ')}</div>}
-                    <Sources list={it.sources} />
                   </td>
                   {cols.map((c) => (
                     <td key={c.id} className={`border-b border-white px-1.5 py-2 ${c.w} ${c.right && !['price'].includes(c.id) ? 'text-right' : ''}`}>
@@ -175,7 +176,6 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
                   <td className="sticky left-10 z-10 border-b border-white bg-inherit px-2 py-2 font-semibold">
                     {e.name}
                     <div className="text-xs font-normal opacity-70">{extraQty(e)}{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
-                    <Sources list={e.sources} />
                   </td>
                   <td colSpan={span - 2} className="border-b border-white px-2 py-2">
                     <div className="flex flex-wrap items-start gap-x-5 gap-y-2">
@@ -212,12 +212,11 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
           {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
             <article key={it.key} className={`rounded-xl p-3 shadow-sm ${ROW_STYLE[it.status]}`}>
               <div className="flex items-start justify-between gap-2">
-                <button className={`min-w-0 text-left font-semibold leading-snug ${strike(it)}`} onClick={() => onOpen(it)}><span className="mr-1 font-normal opacity-60">{it.no}.</span>{it.name}</button>
+                <button className={`min-w-0 text-left font-semibold leading-snug ${strike(it)}`} onClick={() => onOpen(it)}><span className="mr-1 font-normal opacity-60">{it.no}.</span>{it.name}<FilesMark it={it} /></button>
                 <button className="shrink-0 rounded-full bg-white/70 p-2" aria-label="Подробнее" onClick={() => onOpen(it)}><Pencil size={15} /></button>
               </div>
               {spec(it) && <div className={`mt-1 text-xs opacity-80 ${strike(it)}`}>{spec(it)}</div>}
               {!grouped && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
-              <Sources list={it.sources} />
               <div className="mt-2"><Rooms entries={it.roomEntries} strike={strike(it)} max={4} /></div>
               <div className="mt-2.5 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                 <div className="space-y-0.5">
@@ -250,7 +249,6 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
             <article key={e.key} className={`rounded-xl p-3 ${ROW_STYLE[e.declined ? 'declined' : 'extra']}`}>
               <div className="font-semibold">{e.name}</div>
               <div className="mt-1 text-sm">{extraQty(e)}{e.price ? ` · ${fmtMoney(e.price)} ₸/шт` : ''}</div>
-              <Sources list={e.sources} />
               <div className="mt-1.5 flex flex-wrap items-start gap-x-4 gap-y-2">
                 <StatusBadge status={extraStatus(e)} partial={e.declined ? '' : 'нет в потребности'} />
                 <NeedBlock it={e} onEdit={(p) => edit(e.key, p)} />
@@ -275,6 +273,7 @@ export default function ItemsView(props) {
   return (
     <>
       <div className="flex flex-wrap justify-end gap-2">
+        {props.removedCount > 0 && <button className="btn !py-1.5 text-xs" onClick={props.onRemoved} title="Позиции, которые вы убрали из списка"><EyeOff size={14} /> Убранные · {props.removedCount}</button>}
         <button className="btn !py-1.5 text-xs" onClick={props.onHelp} title="Что означают цвета и статусы"><CircleHelp size={14} /> Подсказки</button>
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set())}>Развернуть все</button>}
         {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set(allCats))}>Свернуть все</button>}

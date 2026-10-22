@@ -71,7 +71,7 @@ function useLocal(enabled) {
     setFact: (name, v) => setState((s) => ({ ...s, facts: { ...s.facts, [name]: v } })),
     reset: () => setState(emptyState()),
   }), []);
-  return { state, actions, ready: true, error: '' };
+  return { state, actions, ready: true, error: '', filesByKey: {} };
 }
 
 // ---------- общая база ----------
@@ -81,6 +81,7 @@ function useRemote(db, canWrite) {
   const [editDocs, setEditDocs] = useState(null);
   const [aliasDocs, setAliasDocs] = useState(null);
   const [manualDocs, setManualDocs] = useState(null);
+  const [fileDocs, setFileDocs] = useState([]); // метаданные вложений (сами файлы читаются по запросу)
   const [error, setError] = useState('');
   const queues = useRef(new Map());
 
@@ -94,6 +95,7 @@ function useRemote(db, canWrite) {
       db.collection('edits').onSnapshot(list(setEditDocs, (x) => x), fail),
       db.collection('aliases').onSnapshot(list(setAliasDocs, (x) => x), fail),
       db.collection('manual').onSnapshot(list(setManualDocs, (x) => x), fail),
+      db.collection('files').onSnapshot(list(setFileDocs, (x) => x), fail),
     ];
     return () => subs.forEach((u) => u());
   }, [db]);
@@ -165,16 +167,33 @@ function useRemote(db, canWrite) {
         }
         await db.doc('meta/state').set({ ...(meta || {}), importedAt: new Date().toISOString() });
       }),
+      addFile: (key, f) => run('files/new', async () => {
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        await db.doc(`filedata/${id}`).set({ data: f.data });
+        await db.doc(`files/${id}`).set({ key, name: f.name, mime: f.mime, size: f.size, at: new Date().toISOString() });
+      }),
+      removeFile: (id) => run(`files/${id}`, async () => {
+        await db.doc(`files/${id}`).delete();
+        await db.doc(`filedata/${id}`).delete();
+      }),
+      getFile: async (id) => (await db.doc(`filedata/${id}`).get()).data()?.data || '',
       reset: () => run('reset', async () => {
-        const all = [['rows', rowDocs], ['edits', editDocs], ['aliases', aliasDocs], ['manual', manualDocs]];
+        const all = [['rows', rowDocs], ['edits', editDocs], ['aliases', aliasDocs], ['manual', manualDocs], ['files', fileDocs], ['filedata', fileDocs]];
         for (const [c, docs] of all) for (const d of docs || []) await db.doc(`${c}/${d.id}`).delete();
         await db.doc('meta/state').delete();
       }),
     };
   }, [db, run, meta, rowDocs, editDocs, aliasDocs, manualDocs]);
 
+  const filesByKey = useMemo(() => {
+    const m = {};
+    for (const f of fileDocs) (m[f.key] = m[f.key] || []).push(f);
+    for (const k of Object.keys(m)) m[k].sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    return m;
+  }, [fileDocs]);
+
   const ready = !db || (meta !== null && rowDocs !== null && editDocs !== null && aliasDocs !== null && manualDocs !== null);
-  return { state, actions, ready, error, clearError: () => setError('') };
+  return { state, actions, ready, error, filesByKey, clearError: () => setError('') };
 }
 
 export function useStore(conn) {
@@ -184,13 +203,16 @@ export function useStore(conn) {
   const cur = db ? remote : local;
   const { state } = cur;
 
-  const built = useMemo(() => buildList(state), [state]);
+  const rawBuilt = useMemo(() => buildList(state), [state]);
+  const filesByKey = cur.filesByKey;
+  // к каждой позиции добавляем её вложения (фото и документы-подтверждения)
+  const built = useMemo(() => ({ ...rawBuilt, items: rawBuilt.items.map((i) => ({ ...i, files: filesByKey[i.key] || [] })) }), [rawBuilt, filesByKey]);
   const summary = useMemo(() => summarize(built.items, state.facts), [built, state.facts]);
   const suggestions = useMemo(() => suggestLinks(state, built), [state, built]);
 
   return {
     state, built, summary, suggestions,
-    shared: !!db, ready: cur.ready, error: cur.error || '', clearError: cur.clearError || (() => {}),
+    shared: !!db, canAttach: !!db && canWrite, downloads: conn.downloads, ready: cur.ready, error: cur.error || '', clearError: cur.clearError || (() => {}),
     ...cur.actions,
   };
 }

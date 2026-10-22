@@ -16,6 +16,7 @@ export const STAGE_LABEL = Object.fromEntries(STAGES);
 export const STATUS = {
   china: 'Едет из Китая',
   ordering: 'В процессе оформления',
+  done: 'Готово (установлено)',
   toorder: 'Надо заказать',
   request: 'В процессе (в заявке)',
   added: 'НАДО ЛИ?',
@@ -118,42 +119,54 @@ export function buildList(state) {
   }
 
   const items = [];
+  const removed = []; // убранные из списка (их можно вернуть)
   for (const [key, b] of base) {
     const ed = edits[key] || {};
-    const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : b.qty;
+    if (ed.removed === true) {
+      removed.push({ key, name: ed.name || b.name, qty: b.qty, rooms: roomsText(b.rooms), sources: [...(b.srcs ?? [])] });
+      continue;
+    }
+    // помещения можно переопределить вручную; тогда количество по умолчанию — сумма по помещениям
+    const roomMap = Array.isArray(ed.rooms) && ed.rooms.length ? new Map(ed.rooms.map(([r, q]) => [String(r), toNum(q)])) : b.rooms;
+    const baseQty = roomMap === b.rooms ? b.qty : [...roomMap.values()].reduce((a, x) => a + x, 0);
+    const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : baseQty;
+    const done = ed.done === true;
     const ch = chinaMap.get(key);
     const china = ch ? ch.qty : 0;
     const tr = ch ? ch.transit : 0; // едет (Заказ 1)
     const od = ch ? ch.ordering : 0; // в процессе оформления (Заказ 2)
     const covered = china > 0 && china >= total;
     // «НАДО?» решается только для позиций, которых нет ни в заявке СД, ни в Китае (красные)
-    const canDecide = !covered && b.source !== 'sd';
+    const canDecide = !covered && b.source !== 'sd' && !done;
     const need = canDecide ? ed.need || '' : '';
     const declined = need === 'no';
-    const buy = declined ? 0 : Math.max(0, total - china);
-    const status = covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? (ks.has(key) ? 'toorder' : 'request') : 'added';
+    const buy = declined || done ? 0 : Math.max(0, total - china);
+    const status = done ? 'done' : covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? (ks.has(key) ? 'toorder' : 'request') : 'added';
     const parts = [tr && `едет ${tr}`, od && `оформляется ${od}`].filter(Boolean);
-    const partial = declined || !china || (covered && parts.length === 1) ? '' : [...parts, buy ? `докупить ${buy}` : ''].filter(Boolean).join(', ');
+    const partial = declined || done || !china || (covered && parts.length === 1) ? '' : [...parts, buy ? `докупить ${buy}` : ''].filter(Boolean).join(', ');
     const price = toNum(ed.price);
     items.push({
       key,
-      name: b.name,
-      aliasNames: [...new Set([...b.names ?? [], ...(ch?.names ?? [])])].filter((n) => n !== b.name),
+      name: ed.name || b.name,
+      origName: b.name,
+      done,
+      aliasNames: [...new Set([...b.names ?? [], ...(ch?.names ?? [])])].filter((n) => n !== (ed.name || b.name)),
       size: b.size,
       notes: b.notes,
       comments: b.comments,
-      category: ed.category || classify(b.name),
-      baseQty: b.qty,
+      category: ed.category || classify(ed.name || b.name),
+      baseQty,
       qty: total,
       qtyEdited: ed.qty !== undefined && ed.qty !== '',
       sdQty: b.sdQty,
       ksQty: b.ksQty,
       china,
       buy,
-      rooms: roomsText(b.rooms),
-      roomEntries: [...b.rooms],
+      rooms: roomsText(roomMap),
+      roomEntries: [...roomMap],
+      roomsEdited: roomMap !== b.rooms,
       sources: [...(b.srcs ?? []), ...(ch ? [...ch.orders] : [])],
-      roomList: [...b.rooms.keys()],
+      roomList: [...roomMap.keys()],
       status,
       canDecide,
       need,
@@ -197,11 +210,11 @@ export function buildList(state) {
   const ksMore = items.filter((i) => i.source === 'sd' && i.ksQty > i.sdQty);
   const sdNotInKs = state.ks.length ? items.filter((i) => i.source === 'sd' && !ks.has(i.key)) : [];
 
-  return { items, extras, reconcile: { ksOnly, ksMore, sdNotInKs } };
+  return { items, extras, removed, reconcile: { ksOnly, ksMore, sdNotInKs } };
 }
 
 export function summarize(items, facts = {}) {
-  const counts = { china: 0, ordering: 0, toorder: 0, request: 0, added: 0, declined: 0 };
+  const counts = { done: 0, china: 0, ordering: 0, toorder: 0, request: 0, added: 0, declined: 0 };
   let total = 0;
   const sup = new Map();
   for (const it of items) {

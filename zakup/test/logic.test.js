@@ -207,3 +207,17 @@ test('«Надо заказать»: позиция есть и в СД, и в �
   assert.equal(by['Шкаф'].status, 'request');
   assert.equal(by['Лампа'].status, 'china'); // Китай уже покрывает — остаётся «Едет»
 });
+
+test('правки позиции: убрать, переименовать, помещения, «Готово»', () => {
+  const sd = [{ src: 'КС', room: 'А', name: 'Весы', qty: 3, size: '', note: '', comment: '' }, { src: 'КС', room: 'Б', name: 'Дверь', qty: 1, size: '', note: '', comment: '' }];
+  const kw = looseKey('Весы');
+  const b = buildList({ ...emptyState(), sd, edits: { [kw]: { name: 'Весы медицинские', rooms: [['Манипуляционная', 1]] }, [looseKey('Дверь')]: { done: true } } });
+  const w = b.items.find((i) => i.key === kw);
+  assert.equal(w.name, 'Весы медицинские'); assert.equal(w.qty, 1); assert.equal(w.rooms, 'Манипуляционная — 1');
+  const d = b.items.find((i) => i.name === 'Дверь');
+  assert.equal(d.status, 'done'); assert.equal(d.buy, 0);
+  const gone = buildList({ ...emptyState(), sd, edits: { [kw]: { removed: true } } });
+  assert.equal(gone.items.length, 1); assert.equal(gone.removed[0].name, 'Весы');
+  const back = buildList({ ...emptyState(), sd, edits: { [kw]: { removed: '' } } });
+  assert.equal(back.items.length, 2);
+});
