@@ -25,7 +25,8 @@ export async function connect() {
     const [db, user, downloads] = await Promise.all([claude.use('db'), claude.use('user'), claude.use('downloads')]);
     let canWrite = true;
     try { if (db && user && user.can('data.write') === false) canWrite = false; } catch (e) { /* неизвестно — считаем, что можно */ }
-    return { db, canWrite, downloads };
+    // страница открыта в claude.ai, но общей таблицы нет: не показываем локальный режим, он вводит в заблуждение
+    return { db, canWrite, downloads, noAccess: !db };
   } catch (e) {
     return { db: null, canWrite: true, downloads: null };
   }

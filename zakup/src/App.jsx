@@ -51,8 +51,9 @@ export default function App({ conn }) {
           <div className="shrink-0" title="Центр гематологии"><Logo variant="mark" className="h-10 w-10 object-contain sm:h-12 sm:w-12" /></div>
           <div className="min-w-0 flex-1 leading-none">
             <h1 className="truncate text-[15px] font-bold text-brand sm:text-xl">Закуп оборудования</h1>
-            <div className="mt-1 truncate text-xs text-slate-500">Запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
+            <div className="mt-1 truncate text-xs text-slate-500">Запуск КС · {store.shared ? 'общая таблица' : conn.noAccess ? 'нет доступа' : 'только на этом устройстве'}</div>
           </div>
+          {!conn.noAccess && (<>
           <button className="btn !px-2.5 sm:!px-3" onClick={() => setDlg({ type: 'import' })}>
             <FileUp size={16} /><span className="hidden sm:inline">Импорт</span>
           </button>
@@ -71,6 +72,7 @@ export default function App({ conn }) {
               </div>
             )}
           </div>
+          </>)}
         </div>
       </header>
 
@@ -81,7 +83,13 @@ export default function App({ conn }) {
             <button className="shrink-0 font-semibold underline" onClick={store.clearError}>Скрыть</button>
           </div>
         )}
-        {!store.ready ? (
+        {conn.noAccess ? (
+          <div className="mx-auto max-w-md rounded border border-brand bg-white p-6 text-center">
+            <Logo className="mx-auto h-24" />
+            <h2 className="mt-3 text-xl font-bold text-brand">Нет доступа к общей таблице</h2>
+            <p className="mt-2 text-sm text-slate-600">Откройте ссылку в браузере, где вы вошли в свой аккаунт claude.ai, и убедитесь, что владелец таблицы дал вам доступ с правом редактирования. Если вы только что вошли, обновите страницу.</p>
+          </div>
+        ) : !store.ready ? (
           <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Загружаю общую таблицу…</div>
         ) : empty ? (
           <div className="mx-auto max-w-md rounded border border-brand bg-white p-6 text-center">
