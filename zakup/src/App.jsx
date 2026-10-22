@@ -95,18 +95,9 @@ export default function App({ conn }) {
           </div>
         ) : (
           <>
-                        {suggestions.length > 0 && (
-              <button className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-left text-sm" onClick={() => setDlg({ type: 'links' })}>
-                Найдено возможных совпадений названий: <b>{suggestions.length}</b>. Проверить и связать →
-              </button>
-            )}
-            <Filters f={f} setF={setF} items={built.items} />
+            <Filters f={f} setF={setF} />
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs text-slate-500">
-                Показано {mainItems.length} из {built.items.length}
-                {undecided > 0 && <> · <button className="font-semibold text-amber-700 underline" onClick={() => setF({ ...EMPTY_F, need: 'undecided' })}>НАДО ЛИ? не решено: {undecided}</button></>}
-                {extras.length ? ` · из Китая без потребности: ${extras.length}` : ''}
-              </div>
+              <div />
               <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white text-xs font-medium">
                 <button className={`px-3 py-1.5 ${grouped ? 'bg-brand text-white' : ''}`} onClick={() => setGroupedSaved(true)}>По категориям</button>
                 <button className={`px-3 py-1.5 ${!grouped ? 'bg-brand text-white' : ''}`} onClick={() => setGroupedSaved(false)}>Одним списком</button>

@@ -18,7 +18,7 @@ const COLS = [
   { id: 'qty', label: 'Кол-во', hint: 'Сколько нужно всего. Меняется кнопками − и +', def: true, w: 'w-[8.5rem]' },
   { id: 'china', label: 'Из Китая', hint: 'Сколько уже едет или оформляется', def: false, w: 'w-[4.5rem]', right: true },
   { id: 'buy', label: 'Докупить', hint: 'Нужно минус то, что уже едет из Китая', def: false, w: 'w-[5rem]', right: true },
-  { id: 'status', label: 'Статус', hint: 'Едет, в процессе оформления, в процессе, НАДО ЛИ?', def: true, w: 'min-w-[14rem]' },
+  { id: 'status', label: 'Статус', hint: 'Едет, Заказ Китай №2, Надо согласовать, НАДО ЛИ?', def: true, w: 'min-w-[14rem]' },
   { id: 'supplier', label: 'Поставщик', def: false, w: 'min-w-[10rem]' },
   { id: 'price', label: 'Цена, ₸', hint: 'Цена за единицу', def: false, w: 'min-w-[7rem]', right: true },
   { id: 'sum', label: 'Сумма, ₸', hint: 'Докупить × цена', def: false, w: 'w-[7rem]', right: true },

@@ -2,7 +2,7 @@
 import { CATEGORIES } from './categories.js';
 import { STATUS, STAGE_LABEL, summarize } from './build.js';
 
-const FILL = { done: 'FFA9D9B8', china: 'FFC6EFCE', ordering: 'FFB7E1CD', toorder: 'FFFCD5B4', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
+const FILL = { done: 'FFA9D9B8', china: 'FFC6EFCE', ordering: 'FFC6EFCE', toorder: 'FFFCD5B4', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
 const COLS = [
   ['№', 5], ['Наименование', 38], ['Категория', 24], ['Кол-во всего', 10], ['Из Китая, шт', 10], ['Докупить, шт', 10],
   ['Характеристики / габариты', 28], ['Где (помещения)', 38], ['Статус', 26], ['Надо? / причина', 22], ['Поставщик', 20],

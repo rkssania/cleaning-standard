@@ -14,7 +14,7 @@ export const ROW_STYLE = {
 };
 export const BADGE_STYLE = {
   china: 'bg-green-600 text-white',
-  ordering: 'bg-teal-700 text-white',
+  ordering: 'bg-green-600 text-white',
   done: 'bg-emerald-800 text-white',
   toorder: 'bg-orange-500 text-white',
   request: 'bg-yellow-400 text-yellow-950',
@@ -23,15 +23,15 @@ export const BADGE_STYLE = {
   extra: 'bg-emerald-700 text-white',
 };
 
-// Простыми словами: Китай = «В процессе», в заявке = «Надо». Пояснение — мелким шрифтом.
-const SHORT = { done: 'Готово', china: 'Едет', ordering: 'В процессе оформления', toorder: 'Надо заказать', request: 'В процессе', declined: 'Не надо', extra: 'Едет из Китая' };
-const SUB = { done: 'установлено', china: 'из Китая', ordering: 'Китай', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
+// Простыми словами: Китай заказ 1 = «Едет», заказ 2 = «Заказ Китай №2» (оба зелёные), только в заявке = «Надо согласовать» (жёлтый).
+const SHORT = { done: 'Готово', china: 'Едет', ordering: 'Заказ Китай №2', toorder: 'Надо заказать', request: 'Надо согласовать', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { done: 'установлено', china: 'Китай, заказ 1', ordering: 'в процессе оформления', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
 const HINT = {
   done: 'Уже сделано и установлено. Подтверждение можно приложить в карточке.',
   china: 'Едет из Китая (заказ 1). Покупать не нужно.',
   ordering: 'Китай, заказ 2: в процессе оформления. Покупать не нужно.',
   toorder: 'Есть и в заявке СД, и в потребности КС Астана. Нужно заказывать.',
-  request: 'Позиция только в заявке СД: в процессе.',
+  request: 'Позиция только в заявке СД: нужно согласовать.',
   declined: 'Решили не покупать. Причина указана рядом.',
 };
 

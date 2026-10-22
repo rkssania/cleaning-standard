@@ -14,11 +14,11 @@ export const STAGES = [
 export const STAGE_LABEL = Object.fromEntries(STAGES);
 
 export const STATUS = {
-  china: 'Едет из Китая',
-  ordering: 'В процессе оформления',
+  china: 'Едет (Китай, заказ 1)',
+  ordering: 'Заказ Китай №2',
   done: 'Готово (установлено)',
   toorder: 'Надо заказать',
-  request: 'В процессе (в заявке)',
+  request: 'Надо согласовать',
   added: 'НАДО ЛИ?',
   declined: 'Не надо',
   extra: 'Из Китая, но нет в потребности — надо ли?',
