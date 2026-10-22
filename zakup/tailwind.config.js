@@ -1,17 +1,13 @@
-// Комикс-тема: тёмно-синий, красный, золотой. Меняются здесь в одном месте.
+// Фирменные цвета Центра гематологии: меняются здесь в одном месте.
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: '#12204A', dark: '#0A1333', light: '#FFD23F' },
-        accent: '#E62429',
+        brand: { DEFAULT: '#12396B', dark: '#0B2547', light: '#E8EEF6' },
+        accent: '#C8102E',
       },
-      fontFamily: {
-        display: ['Bangers', 'Impact', 'Arial Narrow', 'sans-serif'],
-        cond: ['"Barlow Condensed"', 'Arial Narrow', 'sans-serif'],
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
-      },
+      fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'] },
     },
   },
   plugins: [],

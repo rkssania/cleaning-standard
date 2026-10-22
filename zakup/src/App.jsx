@@ -11,7 +11,6 @@ import LinksDialog from './components/LinksDialog.jsx';
 import Legend from './components/Legend.jsx';
 import LinkPicker from './components/LinkPicker.jsx';
 import Logo from './components/Logo.jsx';
-import { Burst, Emblem } from './components/Hero.jsx';
 import { Field, Modal } from './components/ui.jsx';
 
 const EMPTY_F = { q: '', need: '', status: '', category: '', room: '', supplier: '', responsible: '', stage: '' };
@@ -47,13 +46,12 @@ export default function App({ conn }) {
 
   return (
     <div className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
-      <header className="halftone-dark sticky top-[env(safe-area-inset-top,0px)] z-30 border-b-4 border-accent bg-brand text-white shadow-[0_4px_0_#000]">
+      <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 border-b-2 border-brand bg-white">
         <div className="mx-auto flex max-w-[1800px] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4">
-          <div className="shrink-0 overflow-hidden rounded-full border-[3px] border-black bg-white p-0.5 shadow-[2px_2px_0_#000]" title="Центр гематологии"><Logo variant="mark" className="h-10 w-10 object-contain sm:h-12 sm:w-12" /></div>
-          <Emblem className="hidden h-11 w-11 shrink-0 sm:block" />
+          <div className="shrink-0" title="Центр гематологии"><Logo variant="mark" className="h-10 w-10 object-contain sm:h-12 sm:w-12" /></div>
           <div className="min-w-0 flex-1 leading-none">
-            <h1 className="comic-title truncate text-2xl sm:text-3xl">Закуп оборудования!</h1>
-            <div className="mt-1 truncate font-cond text-xs font-bold uppercase tracking-wider text-brand-light sm:text-sm">Миссия: запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
+            <h1 className="truncate text-[15px] font-bold text-brand sm:text-xl">Закуп оборудования</h1>
+            <div className="mt-1 truncate text-xs text-slate-500">Запуск КС · {store.shared ? 'общая таблица' : 'только на этом устройстве'}</div>
           </div>
           <button className="btn !px-2.5 sm:!px-3" onClick={() => setDlg({ type: 'import' })}>
             <FileUp size={16} /><span className="hidden sm:inline">Импорт</span>
@@ -64,7 +62,7 @@ export default function App({ conn }) {
           <div className="relative">
             <button className="btn !px-2" aria-label="Меню" onClick={() => setMenu(!menu)}><MoreVertical size={18} /></button>
             {menu && (
-              <div className="absolute right-0 top-full mt-2 w-64 overflow-hidden rounded-lg border-2 border-black bg-white py-1 text-sm text-slate-900 shadow-[4px_4px_0_#000]" onClick={() => setMenu(false)}>
+              <div className="absolute right-0 top-full mt-2 w-64 overflow-hidden rounded border border-brand bg-white py-1 text-sm text-slate-900 shadow-lg" onClick={() => setMenu(false)}>
                 <MenuItem icon={CircleHelp} onClick={() => setDlg({ type: 'help' })}>Подсказки</MenuItem>
                 <MenuItem icon={Link2} onClick={() => setDlg({ type: 'links' })}>Сверка и связи{suggestions.length ? ` (${suggestions.length})` : ''}</MenuItem>
                 <MenuItem icon={Plus} onClick={() => setDlg({ type: 'add' })}>Добавить позицию вручную</MenuItem>
@@ -86,10 +84,9 @@ export default function App({ conn }) {
         {!store.ready ? (
           <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Загружаю общую таблицу…</div>
         ) : empty ? (
-          <div className="relative mx-auto max-w-md rounded-xl border-4 border-black bg-white p-6 text-center shadow-[6px_6px_0_#000]">
-            <div className="absolute -right-3 -top-6 rotate-12"><Burst className="h-20 w-20">ПОЕХАЛИ!</Burst></div>
+          <div className="mx-auto max-w-md rounded border border-brand bg-white p-6 text-center">
             <div className="mx-auto w-fit"><Logo className="h-36" /></div>
-            <h2 className="mt-2 font-display text-3xl tracking-wide text-brand">Загрузите данные</h2>
+            <h2 className="mt-2 text-2xl font-bold text-brand">Загрузите данные</h2>
             <p className="mt-1 text-sm text-slate-600">Импортируйте Excel: «Общая заявка СД», «КС Астана» и «Китай» (лист «Заказ 1»). Приложение соберёт единый список закупа.</p>
             <div className="mt-4 flex flex-col gap-2">
               <button className="btn btn-primary !py-3" onClick={() => setDlg({ type: 'import' })}><FileUp size={18} /> Импорт из Excel</button>

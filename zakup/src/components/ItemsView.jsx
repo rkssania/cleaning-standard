@@ -134,7 +134,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
   const span = cols.length + 3;
   const TH = 'whitespace-nowrap px-2 py-2 text-xs font-semibold';
   return (
-    <div className="hidden max-h-[78dvh] overflow-auto rounded-lg border-2 border-black bg-white shadow-[4px_4px_0_#000] lg:block">
+    <div className="hidden max-h-[78dvh] overflow-auto rounded border border-brand bg-white lg:block">
       <table className="w-full border-separate border-spacing-0 text-[13px]">
         <thead className="sticky top-0 z-30 bg-brand text-white">
           <tr>
@@ -293,9 +293,9 @@ export default function ItemsView(props) {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {sectionList.length > 0 && (
           <div className="mr-auto flex flex-wrap items-center gap-1.5">
-            <span className="font-cond text-sm font-bold uppercase tracking-wide text-brand">Разделы:</span>
+            <span className="text-sm font-semibold text-brand">Разделы:</span>
             {sectionList.map(([title, n]) => (
-              <button key={title} className="rounded-full border-2 border-black bg-brand-light px-3 py-1 font-cond text-sm font-bold uppercase tracking-wide text-brand shadow-[2px_2px_0_#000] hover:bg-yellow-300" onClick={() => goTo(title)}>{title} · {n}</button>
+              <button key={title} className="rounded border border-brand bg-white px-3 py-1 text-sm font-semibold text-brand hover:bg-brand-light" onClick={() => goTo(title)}>{title} · {n}</button>
             ))}
           </div>
         )}
