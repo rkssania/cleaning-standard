@@ -183,3 +183,13 @@ test('Китай: «Заказ 1» — едет, «Заказ 2» — в про�
   const declined = buildList({ ...emptyState(), sd, china, edits: { [looseKey('Лампа')]: { need: 'no', needReason: 'уже есть' } } }).extras.find((e) => e.name === 'Лампа');
   assert.equal(declined.declined, true); assert.equal(declined.needReason, 'уже есть');
 });
+
+test('источники: из каких таблиц позиция', () => {
+  const sd = [{ src: 'Фарма', room: 'А', name: 'Стол', qty: 1, size: '', note: '', comment: '' }, { src: 'КС', room: 'Б', name: 'Стол', qty: 1, size: '', note: '', comment: '' }];
+  const ks = [{ src: 'Оснащение', room: 'А', name: 'Стол', qty: 2 }, { src: 'Оснащение', room: 'А', name: 'Лампа', qty: 1 }];
+  const china = [{ name: 'Стол', qty: 1, price: 1, order: 1 }, { name: 'Бахилы', qty: 5, price: 1, order: 2 }];
+  const b = buildList({ ...emptyState(), sd, ks, china });
+  assert.deepEqual(b.items.find((i) => i.name === 'Стол').sources, ['СД · Фарма', 'СД · КС', 'КС Астана', 'Китай · заказ 1']);
+  assert.deepEqual(b.items.find((i) => i.name === 'Лампа').sources, ['КС Астана']);
+  assert.deepEqual(b.extras[0].sources, ['Китай · заказ 2']);
+});

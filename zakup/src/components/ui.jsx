@@ -173,3 +173,20 @@ export function Rooms({ entries, strike, max = 3 }) {
     </div>
   );
 }
+
+const SRC_STYLE = { 'СД': 'bg-indigo-100 text-indigo-900', 'КС': 'bg-violet-100 text-violet-900', 'Ки': 'bg-emerald-100 text-emerald-900' };
+
+/** Откуда позиция: короткие метки «СД · Фарма», «КС Астана», «Китай · заказ 1». */
+export function Sources({ list }) {
+  if (!list?.length) return null;
+  // inline-flex: зачёркивание зелёных строк на метки не распространяется
+  return (
+    <div className="mt-1">
+      <span className="inline-flex flex-wrap gap-1" title="Из каких таблиц позиция">
+        {list.map((s) => (
+          <span key={s} className={`rounded px-1 py-px text-[10.5px] font-semibold leading-snug ${SRC_STYLE[s.slice(0, 2)] || 'bg-slate-200 text-slate-700'}`}>{s}</span>
+        ))}
+      </span>
+    </div>
+  );
+}

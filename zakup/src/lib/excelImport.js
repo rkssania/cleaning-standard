@@ -133,6 +133,7 @@ export function parseSheet(rows, map, kind, defaultRoom = '') {
     let note = String(get('note')).trim();
     if (isOddQty(qtyRaw)) note = [`Кол-во в источнике: ${String(qtyRaw).trim()}`, note].filter(Boolean).join('; ');
     out.push({
+      src: defaultRoom,
       room: cols.room !== undefined ? roomCell || room : room,
       name,
       size: String(get('size')).trim(),

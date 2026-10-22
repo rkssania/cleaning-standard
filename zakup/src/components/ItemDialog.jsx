@@ -3,7 +3,7 @@ import { Trash2, Unlink } from 'lucide-react';
 import { STAGES, resolveKey } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { EditInput, Field, Modal, NeedBlock, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
+import { EditInput, Field, Modal, NeedBlock, QtyStepper, Rooms, Sources, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
 export default function ItemDialog({ item, store, onClose }) {
@@ -25,6 +25,7 @@ export default function ItemDialog({ item, store, onClose }) {
             <p className="mt-1 text-xs text-slate-600">Позиции нет в заявке СД и в заказе из Китая. «Нет» убирает её из закупа. Укажите причину решения.</p>
           </div>
         )}
+        <div><div className="text-xs font-medium text-slate-500">Источник</div><Sources list={it.sources} /></div>
         {it.roomEntries?.length > 0 && <div><div className="mb-1 text-xs font-medium text-slate-500">Где стоит</div><Rooms entries={it.roomEntries} max={50} /></div>}
         {[it.size, ...it.notes].filter(Boolean).length > 0 && <p className="text-sm"><b>Характеристики:</b> {[it.size, ...it.notes].filter(Boolean).join('; ')}</p>}
         {it.comments.length > 0 && <p className="text-sm"><b>Комментарий СД:</b> {it.comments.join('; ')}</p>}

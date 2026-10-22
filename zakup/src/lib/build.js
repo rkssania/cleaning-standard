@@ -58,19 +58,20 @@ function addRoom(map, room, qty) {
   map.set(r, (map.get(r) || 0) + qty);
 }
 
-function fold(rows, aliases) {
+function fold(rows, aliases, label) {
   const m = new Map();
   for (const r of rows) {
     if (!String(r.name || '').trim()) continue;
     const key = resolveKey(looseKey(r.name), aliases);
     let it = m.get(key);
     if (!it) {
-      it = { key, name: String(r.name).trim(), size: '', notes: [], comments: [], rooms: new Map(), qty: 0, names: new Set() };
+      it = { key, name: String(r.name).trim(), size: '', notes: [], comments: [], rooms: new Map(), qty: 0, names: new Set(), srcs: new Set() };
       m.set(key, it);
     }
     const q = toNum(r.qty);
     it.qty += q;
     it.names.add(String(r.name).trim());
+    it.srcs.add(label(r));
     addRoom(it.rooms, r.room, q);
     if (!it.size && r.size) it.size = String(r.size).trim();
     for (const [f, arr] of [['note', it.notes], ['comment', it.comments]]) {
@@ -85,14 +86,15 @@ export const roomsText = (rooms) => [...rooms].map(([r, q]) => `${r} — ${q}`).
 
 export function buildList(state) {
   const { aliases, edits, settings } = state;
-  const sd = fold(dedupePit(state.sd, settings.dedupePit), aliases);
-  const ks = fold(dedupePit(state.ks, settings.dedupePit), aliases);
+  const sd = fold(dedupePit(state.sd, settings.dedupePit), aliases, (r) => `СД · ${r.src || 'заявка'}`);
+  const ks = fold(dedupePit(state.ks, settings.dedupePit), aliases, () => 'КС Астана');
 
   const chinaMap = new Map();
   for (const c of state.china) {
     if (!String(c.name || '').trim()) continue;
     const key = resolveKey(looseKey(c.name), aliases);
-    const e = chinaMap.get(key) || { key, name: String(c.name).trim(), qty: 0, transit: 0, ordering: 0, cost: 0, names: [] };
+    const e = chinaMap.get(key) || { key, name: String(c.name).trim(), qty: 0, transit: 0, ordering: 0, cost: 0, names: [], orders: new Set() };
+    e.orders.add(c.order === 2 ? 'Китай · заказ 2' : 'Китай · заказ 1');
     e.qty += toNum(c.qty);
     if (c.order === 2) e.ordering += toNum(c.qty); else e.transit += toNum(c.qty);
     e.cost += toNum(c.qty) * toNum(c.price);
@@ -101,7 +103,7 @@ export function buildList(state) {
   }
 
   const base = new Map(); // key -> заготовка позиции
-  for (const [key, s] of sd) base.set(key, { ...s, source: 'sd', sdQty: s.qty, ksQty: ks.get(key)?.qty ?? 0 });
+  for (const [key, s] of sd) base.set(key, { ...s, source: 'sd', sdQty: s.qty, ksQty: ks.get(key)?.qty ?? 0, srcs: new Set([...s.srcs, ...(ks.get(key)?.srcs ?? [])]) });
   for (const [key, k] of ks) {
     if (!base.has(key)) base.set(key, { ...k, source: 'ks', sdQty: 0, ksQty: k.qty, notes: k.notes, comments: [] });
   }
@@ -110,7 +112,7 @@ export function buildList(state) {
     if (base.has(key)) continue;
     base.set(key, {
       key, name: m.name, size: m.size || '', notes: [], comments: [], qty: toNum(m.qty),
-      rooms: new Map([[m.room || 'Без помещения', toNum(m.qty)]]), source: 'manual', sdQty: 0, ksQty: 0, manualId: m.id,
+      rooms: new Map([[m.room || 'Без помещения', toNum(m.qty)]]), srcs: new Set(['вручную']), source: 'manual', sdQty: 0, ksQty: 0, manualId: m.id,
     });
   }
 
@@ -149,6 +151,7 @@ export function buildList(state) {
       buy,
       rooms: roomsText(b.rooms),
       roomEntries: [...b.rooms],
+      sources: [...(b.srcs ?? []), ...(ch ? [...ch.orders] : [])],
       roomList: [...b.rooms.keys()],
       status,
       canDecide,
@@ -181,6 +184,7 @@ export function buildList(state) {
     extras.push({
       key, name: c.name, names: c.names, qty: c.qty, cost: c.cost, transit: c.transit, ordering: c.ordering,
       kind: c.transit > 0 ? 'transit' : 'ordering',
+      sources: [...c.orders],
       price: c.qty ? c.cost / c.qty : 0, status: 'extra', category: classify(c.name),
       need, needReason: ed.needReason || '', declined: need === 'no',
     });
