@@ -16,6 +16,7 @@ export const STAGE_LABEL = Object.fromEntries(STAGES);
 export const STATUS = {
   china: 'Едет из Китая',
   ordering: 'В процессе оформления',
+  toorder: 'Надо заказать',
   request: 'В процессе (в заявке)',
   added: 'НАДО ЛИ?',
   declined: 'Не надо',
@@ -130,7 +131,7 @@ export function buildList(state) {
     const need = canDecide ? ed.need || '' : '';
     const declined = need === 'no';
     const buy = declined ? 0 : Math.max(0, total - china);
-    const status = covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? 'request' : 'added';
+    const status = covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? (ks.has(key) ? 'toorder' : 'request') : 'added';
     const parts = [tr && `едет ${tr}`, od && `оформляется ${od}`].filter(Boolean);
     const partial = declined || !china || (covered && parts.length === 1) ? '' : [...parts, buy ? `докупить ${buy}` : ''].filter(Boolean).join(', ');
     const price = toNum(ed.price);
@@ -200,7 +201,7 @@ export function buildList(state) {
 }
 
 export function summarize(items, facts = {}) {
-  const counts = { china: 0, ordering: 0, request: 0, added: 0, declined: 0 };
+  const counts = { china: 0, ordering: 0, toorder: 0, request: 0, added: 0, declined: 0 };
   let total = 0;
   const sup = new Map();
   for (const it of items) {

@@ -5,6 +5,7 @@ import { STATUS } from '../lib/build.js';
 export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
   ordering: 'bg-green-100 text-green-900',
+  toorder: 'bg-orange-100',
   request: 'bg-yellow-100',
   added: 'bg-red-100',
   declined: 'bg-slate-200 text-slate-500',
@@ -13,6 +14,7 @@ export const ROW_STYLE = {
 export const BADGE_STYLE = {
   china: 'bg-green-600 text-white',
   ordering: 'bg-teal-700 text-white',
+  toorder: 'bg-orange-500 text-white',
   request: 'bg-yellow-400 text-yellow-950',
   added: 'bg-red-600 text-white',
   declined: 'bg-slate-500 text-white',
@@ -20,12 +22,13 @@ export const BADGE_STYLE = {
 };
 
 // Простыми словами: Китай = «В процессе», в заявке = «Надо». Пояснение — мелким шрифтом.
-const SHORT = { china: 'Едет', ordering: 'В процессе оформления', request: 'В процессе', declined: 'Не надо', extra: 'Едет из Китая' };
-const SUB = { china: 'из Китая', ordering: 'Китай', request: 'в заявке', declined: '', extra: 'нет в потребности' };
+const SHORT = { china: 'Едет', ordering: 'В процессе оформления', toorder: 'Надо заказать', request: 'В процессе', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { china: 'из Китая', ordering: 'Китай', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
 const HINT = {
   china: 'Едет из Китая (заказ 1). Покупать не нужно.',
   ordering: 'Китай, заказ 2: в процессе оформления. Покупать не нужно.',
-  request: 'Позиция в заявке СД: в процессе.',
+  toorder: 'Есть и в заявке СД, и в потребности КС Астана. Нужно заказывать.',
+  request: 'Позиция только в заявке СД: в процессе.',
   declined: 'Решили не покупать. Причина указана рядом.',
 };
 

@@ -2,7 +2,7 @@
 import { CATEGORIES } from './categories.js';
 import { STATUS, STAGE_LABEL, summarize } from './build.js';
 
-const FILL = { china: 'FFC6EFCE', ordering: 'FFB7E1CD', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
+const FILL = { china: 'FFC6EFCE', ordering: 'FFB7E1CD', toorder: 'FFFCD5B4', request: 'FFFFF2CC', added: 'FFF8CBAD', declined: 'FFD9D9D9', extra: 'FFE2F0D9' };
 const COLS = [
   ['№', 5], ['Наименование', 38], ['Категория', 24], ['Кол-во всего', 10], ['Из Китая, шт', 10], ['Докупить, шт', 10],
   ['Характеристики / габариты', 28], ['Где (помещения)', 38], ['Статус', 26], ['Надо? / причина', 22], ['Поставщик', 20],
@@ -79,7 +79,7 @@ export async function exportXlsx({ items, extras }, facts = {}) {
   const sm = wb.addWorksheet('Сводка');
   sm.columns = [{ width: 40 }, { width: 14 }];
   sm.addRow(['Позиции по статусам', 'Шт.']).eachCell((c) => (c.font = { bold: true }));
-  for (const k of ['china', 'ordering', 'request', 'added', 'declined']) {
+  for (const k of ['china', 'ordering', 'toorder', 'request', 'added', 'declined']) {
     sm.addRow([STATUS[k], s.counts[k]]).getCell(1).fill = solid(FILL[k]);
   }
   sm.addRow([STATUS.extra, extras.length]).getCell(1).fill = solid(FILL.extra);

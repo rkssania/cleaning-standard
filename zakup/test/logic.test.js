@@ -17,7 +17,7 @@ test('объединение по помещениям, количество и�
   assert.equal(bed.china, 4);
   assert.equal(bed.buy, 6);
   assert.match(bed.rooms, /Реанимация — 6; Палата 101 — 2; Палата 102 — 2/);
-  assert.equal(bed.status, 'request');
+  assert.equal(bed.status, 'toorder'); // есть и в СД, и в КС Астана
   assert.equal(bed.partial, 'едет 4, докупить 6');
   assert.equal(bed.ksQty, 9); // ПИТ (6) отброшен: 6+3
 });
@@ -96,7 +96,7 @@ test('экспорт: цвета, зачёркивание, формула су�
   });
   assert.equal(green.font.strike, true);
   assert.equal(green.fill.fgColor.argb, 'FFC6EFCE');
-  assert.equal(yellow.fill.fgColor.argb, 'FFFFF2CC'); assert.ok(!yellow.font.strike);
+  assert.equal(yellow.fill.fgColor.argb, 'FFFCD5B4'); assert.ok(!yellow.font.strike);
   assert.equal(red.fill.fgColor.argb, 'FFF8CBAD');
   assert.match(formula.formula, /^F\d+\*L\d+$/); assert.equal(formula.result, 600);
 });
@@ -192,4 +192,18 @@ test('источники: из каких таблиц позиция', () => {
   assert.deepEqual(b.items.find((i) => i.name === 'Стол').sources, ['СД · Фарма', 'СД · КС', 'КС Астана', 'Китай · заказ 1']);
   assert.deepEqual(b.items.find((i) => i.name === 'Лампа').sources, ['КС Астана']);
   assert.deepEqual(b.extras[0].sources, ['Китай · заказ 2']);
+});
+
+test('«Надо заказать»: позиция есть и в СД, и в КС Астана; только в СД — «В процессе»', () => {
+  const sd = [
+    { src: 'Фарма', room: 'А', name: 'Стол', qty: 2, size: '', note: '', comment: '' },
+    { src: 'Фарма', room: 'А', name: 'Шкаф', qty: 1, size: '', note: '', comment: '' },
+    { src: 'Фарма', room: 'А', name: 'Лампа', qty: 1, size: '', note: '', comment: '' },
+  ];
+  const ks = [{ src: 'Оснащение', room: 'А', name: 'Стол', qty: 2 }, { src: 'Оснащение', room: 'А', name: 'Лампа', qty: 1 }];
+  const china = [{ name: 'Лампа', qty: 1, price: 1, order: 1 }];
+  const by = Object.fromEntries(buildList({ ...emptyState(), sd, ks, china }).items.map((i) => [i.name, i]));
+  assert.equal(by['Стол'].status, 'toorder');
+  assert.equal(by['Шкаф'].status, 'request');
+  assert.equal(by['Лампа'].status, 'china'); // Китай уже покрывает — остаётся «Едет»
 });
