@@ -95,12 +95,11 @@ export default function App({ conn }) {
           </div>
         ) : (
           <>
-            <Filters f={f} setF={setF} />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div />
-              <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white text-xs font-medium">
-                <button className={`px-3 py-1.5 ${grouped ? 'bg-brand text-white' : ''}`} onClick={() => setGroupedSaved(true)}>По категориям</button>
-                <button className={`px-3 py-1.5 ${!grouped ? 'bg-brand text-white' : ''}`} onClick={() => setGroupedSaved(false)}>Одним списком</button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="min-w-0 flex-1 lg:max-w-sm"><Filters f={f} setF={setF} /></div>
+              <div className="inline-flex overflow-hidden rounded border border-brand bg-white text-xs font-medium">
+                <button className={`px-3 py-2 ${grouped ? 'bg-brand text-white' : 'text-brand'}`} onClick={() => setGroupedSaved(true)}>По категориям</button>
+                <button className={`px-3 py-2 ${!grouped ? 'bg-brand text-white' : 'text-brand'}`} onClick={() => setGroupedSaved(false)}>Одним списком</button>
               </div>
             </div>
             <ItemsView

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, CircleHelp, Columns3, EyeOff, Link2, Paperclip, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, Columns3, EyeOff, Link2, Paperclip, Pencil } from 'lucide-react';
 import { STAGES } from '../lib/build.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
 import { EditInput, NeedBlock, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
@@ -276,7 +276,6 @@ export default function ItemsView(props) {
       if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
     }, 60);
   };
-  const allCats = [...new Set(props.items.map((i) => i.category)), '__extra'];
   // разделы по ТЗ (мебель, навигация) при первом появлении свёрнуты, их можно раскрыть
   const seenSections = useRef(new Set());
   useEffect(() => {
@@ -293,16 +292,12 @@ export default function ItemsView(props) {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {sectionList.length > 0 && (
           <div className="mr-auto flex flex-wrap items-center gap-1.5">
-            <span className="text-sm font-semibold text-brand">Разделы:</span>
             {sectionList.map(([title, n]) => (
               <button key={title} className="rounded border border-brand bg-white px-3 py-1 text-sm font-semibold text-brand hover:bg-brand-light" onClick={() => goTo(title)}>{title} · {n}</button>
             ))}
           </div>
         )}
         {props.removedCount > 0 && <button className="btn !py-1.5 text-xs" onClick={props.onRemoved} title="Позиции, которые вы убрали из списка"><EyeOff size={14} /> Убранные · {props.removedCount}</button>}
-        <button className="btn !py-1.5 text-xs" onClick={props.onHelp} title="Что означают цвета и статусы"><CircleHelp size={14} /> Подсказки</button>
-        {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set())}>Развернуть все</button>}
-        {props.grouped && <button className="btn !py-1.5 text-xs" onClick={() => setCollapsed(new Set(allCats))}>Свернуть все</button>}
         <ColumnsMenu vis={vis} setVis={setVis} />
       </div>
       <Table {...props} vis={vis} collapsed={collapsed} toggleCat={toggleCat} />
