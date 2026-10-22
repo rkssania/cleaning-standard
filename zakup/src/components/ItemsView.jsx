@@ -266,16 +266,6 @@ export default function ItemsView(props) {
   const [vis, setVis] = useState(loadCols);
   const [collapsed, setCollapsed] = useState(new Set());
   const toggleCat = (c) => setCollapsed((s) => { const n = new Set(s); if (n.has(c)) n.delete(c); else n.add(c); return n; });
-  const titles = props.sectionTitles || [];
-  const sectionList = titles.map((t) => [t, props.items.filter((i) => i.category === t).length]);
-  // перейти к разделу: раскрыть и прокрутить
-  const goTo = (title) => {
-    setCollapsed((s) => { const n = new Set(s); n.delete(title); return n; });
-    setTimeout(() => {
-      const el = [...document.querySelectorAll('[data-cat]')].filter((e) => e.dataset.cat === title && e.offsetParent !== null)[0];
-      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-    }, 60);
-  };
   // разделы по ТЗ (мебель, навигация) при первом появлении свёрнуты, их можно раскрыть
   const seenSections = useRef(new Set());
   useEffect(() => {
@@ -290,13 +280,6 @@ export default function ItemsView(props) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {sectionList.length > 0 && (
-          <div className="mr-auto flex flex-wrap items-center gap-1.5">
-            {sectionList.map(([title, n]) => (
-              <button key={title} className="rounded border border-brand bg-white px-3 py-1 text-sm font-semibold text-brand hover:bg-brand-light" onClick={() => goTo(title)}>{title} · {n}</button>
-            ))}
-          </div>
-        )}
         {props.removedCount > 0 && <button className="btn !py-1.5 text-xs" onClick={props.onRemoved} title="Позиции, которые вы убрали из списка"><EyeOff size={14} /> Убранные · {props.removedCount}</button>}
         <ColumnsMenu vis={vis} setVis={setVis} />
       </div>
