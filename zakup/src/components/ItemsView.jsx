@@ -134,7 +134,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
   const span = cols.length + 3;
   const TH = 'whitespace-nowrap px-2 py-2 text-xs font-semibold';
   return (
-    <div className="hidden max-h-[78dvh] overflow-auto rounded-lg border bg-white lg:block">
+    <div className="hidden max-h-[78dvh] overflow-auto rounded-lg border-2 border-black bg-white shadow-[4px_4px_0_#000] lg:block">
       <table className="w-full border-separate border-spacing-0 text-[13px]">
         <thead className="sticky top-0 z-30 bg-brand text-white">
           <tr>
@@ -266,7 +266,8 @@ export default function ItemsView(props) {
   const [vis, setVis] = useState(loadCols);
   const [collapsed, setCollapsed] = useState(new Set());
   const toggleCat = (c) => setCollapsed((s) => { const n = new Set(s); if (n.has(c)) n.delete(c); else n.add(c); return n; });
-  const sectionList = [...props.items.filter((i) => i.source === 'section').reduce((m, i) => m.set(i.category, (m.get(i.category) || 0) + 1), new Map())];
+  const titles = props.sectionTitles || [];
+  const sectionList = titles.map((t) => [t, props.items.filter((i) => i.category === t).length]);
   // перейти к разделу: раскрыть и прокрутить
   const goTo = (title) => {
     setCollapsed((s) => { const n = new Set(s); n.delete(title); return n; });
@@ -279,11 +280,11 @@ export default function ItemsView(props) {
   // разделы по ТЗ (мебель, навигация) при первом появлении свёрнуты, их можно раскрыть
   const seenSections = useRef(new Set());
   useEffect(() => {
-    const fresh = [...new Set(props.items.filter((i) => i.source === 'section').map((i) => i.category))].filter((c) => !seenSections.current.has(c));
+    const fresh = (props.sectionTitles || []).filter((c) => !seenSections.current.has(c));
     if (!fresh.length) return;
     fresh.forEach((c) => seenSections.current.add(c));
     setCollapsed((s) => new Set([...s, ...fresh]));
-  }, [props.items]);
+  }, [props.sectionTitles]);
   if (!props.items.length && !props.extras.length) {
     return <div className="rounded-lg border bg-white p-8 text-center text-slate-500">Ничего не найдено</div>;
   }
@@ -292,9 +293,9 @@ export default function ItemsView(props) {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {sectionList.length > 0 && (
           <div className="mr-auto flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-slate-500">Разделы по ТЗ:</span>
+            <span className="font-cond text-sm font-bold uppercase tracking-wide text-brand">Разделы:</span>
             {sectionList.map(([title, n]) => (
-              <button key={title} className="rounded-full border border-brand/40 bg-brand-light px-2.5 py-1 text-xs font-semibold text-brand" onClick={() => goTo(title)}>{title} · {n}</button>
+              <button key={title} className="rounded-full border-2 border-black bg-brand-light px-3 py-1 font-cond text-sm font-bold uppercase tracking-wide text-brand shadow-[2px_2px_0_#000] hover:bg-yellow-300" onClick={() => goTo(title)}>{title} · {n}</button>
             ))}
           </div>
         )}

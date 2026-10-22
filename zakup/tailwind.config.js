@@ -1,13 +1,17 @@
-// Фирменные цвета Центра гематологии (взяты с логотипа: сине-серый и оранжевый). Меняются здесь в одном месте.
+// Комикс-тема: тёмно-синий, красный, золотой. Меняются здесь в одном месте.
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: '#4F5880', dark: '#3C4468', light: '#ECEEF5' },
-        accent: '#D2762F',
+        brand: { DEFAULT: '#12204A', dark: '#0A1333', light: '#FFD23F' },
+        accent: '#E62429',
       },
-      fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'] },
+      fontFamily: {
+        display: ['Bangers', 'Impact', 'Arial Narrow', 'sans-serif'],
+        cond: ['"Barlow Condensed"', 'Arial Narrow', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+      },
     },
   },
   plugins: [],

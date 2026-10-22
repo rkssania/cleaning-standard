@@ -24,6 +24,9 @@ export const STATUS = {
   extra: 'Из Китая, но нет в потребности — надо ли?',
 };
 
+// прежняя категория «Навигация» теперь часть раздела «Навигация (ТЗ)»
+const normCat = (c) => (c === 'Навигация' ? 'Навигация (ТЗ)' : c);
+
 export const emptyState = () => ({
   sd: [], // {room,name,size,qty,note,comment}
   ks: [], // {room,name,size,qty,note}
@@ -155,7 +158,7 @@ export function buildList(state) {
       size: b.size,
       notes: b.notes,
       comments: b.comments,
-      category: ed.category || classify(ed.name || b.name),
+      category: normCat(ed.category) || classify(ed.name || b.name),
       baseQty,
       qty: total,
       qtyEdited: ed.qty !== undefined && ed.qty !== '',
@@ -204,7 +207,7 @@ export function buildList(state) {
     const buy = done ? 0 : total;
     items.push({
       key, name: ed.name || r.name, origName: r.name, done, aliasNames: [], size: r.size || '', notes: [r.spec, r.note].filter(Boolean), comments: [],
-      category: ed.category || sec.title, baseQty, qty: total, qtyEdited: ed.qty !== undefined && ed.qty !== '', sdQty: 0, ksQty: 0, china: 0, buy,
+      category: normCat(ed.category) || sec.title, baseQty, qty: total, qtyEdited: ed.qty !== undefined && ed.qty !== '', sdQty: 0, ksQty: 0, china: 0, buy,
       rooms: roomsText(roomMap), roomEntries: [...roomMap], roomsEdited: roomMap.size > 0 && Array.isArray(ed.rooms) && ed.rooms.length > 0, sources: [sec.title], roomList: [...roomMap.keys()],
       status: done ? 'done' : 'toorder', canDecide: false, need: '', needReason: '', partial: done ? '' : 'по ТЗ', chinaTransit: 0, chinaOrdering: 0,
       supplier: ed.supplier || '', price, sum: buy * price, responsible: ed.responsible || sec.responsible || '', deadline: ed.deadline || '', stage: ed.stage || 'not_started',
@@ -213,7 +216,15 @@ export function buildList(state) {
   }));
   const secIdx = new Map(sections.map((s, i) => [s.title, 100 + i]));
   const catIdx = (c) => { const i = CATEGORIES.indexOf(c); return i >= 0 ? i : secIdx.get(c) ?? 99; };
-  items.sort((a, b) => catIdx(a.category) - catIdx(b.category) || (a.ord != null && b.ord != null ? a.ord - b.ord : a.name.localeCompare(b.name, 'ru')));
+  items.sort((a, b) => {
+    const d = catIdx(a.category) - catIdx(b.category);
+    if (d) return d;
+    const ao = a.ord != null, bo = b.ord != null; // строки ТЗ идут первыми и в порядке ТЗ, потом остальные по алфавиту
+    if (ao && bo) return a.ord - b.ord;
+    if (ao) return -1;
+    if (bo) return 1;
+    return a.name.localeCompare(b.name, 'ru');
+  });
   items.forEach((it, i) => (it.no = i + 1));
 
   // Из Китая, но нет в потребности — надо ли?
@@ -237,7 +248,7 @@ export function buildList(state) {
   const ksMore = items.filter((i) => i.source === 'sd' && i.ksQty > i.sdQty);
   const sdNotInKs = state.ks.length ? items.filter((i) => i.source === 'sd' && !ks.has(i.key)) : [];
 
-  return { items, extras, removed, reconcile: { ksOnly, ksMore, sdNotInKs } };
+  return { items, extras, removed, sectionTitles: sections.map((s) => s.title), reconcile: { ksOnly, ksMore, sdNotInKs } };
 }
 
 export function summarize(items, facts = {}) {

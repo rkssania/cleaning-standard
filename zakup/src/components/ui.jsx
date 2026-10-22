@@ -38,7 +38,7 @@ const HINT = {
 export function StatusBadge({ status, partial }) {
   return (
     <span className="inline-flex flex-col" title={HINT[status] || ''}>
-      <span className={`inline-block w-fit rounded px-1.5 py-0.5 text-xs font-semibold ${BADGE_STYLE[status]}`}>{SHORT[status]}</span>
+      <span className={`inline-block w-fit rounded border border-black px-1.5 py-0.5 text-xs font-bold shadow-[1.5px_1.5px_0_#000] ${BADGE_STYLE[status]}`}>{SHORT[status]}</span>
       {(partial || SUB[status]) && <span className="mt-0.5 text-xs font-medium text-slate-700">{partial || SUB[status]}</span>}
     </span>
   );
@@ -52,10 +52,10 @@ export function Modal({ title, onClose, children, wide }) {
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`flex max-h-[94dvh] w-full flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl ${wide ? 'sm:max-w-4xl' : 'sm:max-w-xl'}`}>
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="text-base font-semibold text-brand">{title}</h2>
-          <button className="rounded p-1.5 hover:bg-slate-100" onClick={onClose} aria-label="Закрыть"><X size={20} /></button>
+      <div className={`flex max-h-[94dvh] w-full flex-col rounded-t-2xl border-4 border-black bg-white shadow-[6px_6px_0_#000] sm:rounded-2xl ${wide ? 'sm:max-w-4xl' : 'sm:max-w-xl'}`}>
+        <div className="flex items-center justify-between border-b-4 border-black bg-accent px-4 py-2">
+          <h2 className="comic-title text-xl text-white sm:text-2xl">{title}</h2>
+          <button className="rounded border-2 border-black bg-white p-1 hover:bg-brand-light" onClick={onClose} aria-label="Закрыть"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{children}</div>
       </div>
