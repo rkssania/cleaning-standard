@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-size: 16px; color: #0f1b2d; background: #F3F5F8; }
+input, select, textarea { font-size: 16px; } /* без автозума на iPhone */
+@media (min-width: 1024px) { input, select, textarea { font-size: 14px; } }
+
+@layer components {
+  .inp { @apply w-full rounded border border-slate-400 bg-white px-2 py-1.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand; }
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded border border-brand bg-white px-3 py-2 text-sm font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-40; }
+  .btn-primary { @apply bg-brand text-white hover:bg-brand-dark; }
+}
+
+/* заголовки категорий и разделов: строгая полоса с акцентом слева */
+[data-cat] { background: #E8EEF6 !important; color: #12396B !important; border-left: 4px solid #12396B; border-bottom: 1px solid #12396B33; letter-spacing: .01em; }
+article { border: 1px solid #94a3b8; }
+thead th { font-size: .72rem !important; letter-spacing: .06em; text-transform: uppercase; }
