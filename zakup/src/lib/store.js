@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyState, buildList, summarize, suggestLinks } from './build.js';
+import { createSupabaseDb } from './supabaseDb.js';
+import { SUPABASE } from '../config.js';
 
 const LOCAL_KEY = 'ks-zakup-v1';
 const CHUNK = 100; // строк в одном документе общей базы
@@ -21,7 +23,11 @@ export function hid(s) {
 export async function connect() {
   try {
     const claude = window.claude;
-    if (!claude?.use) return { db: null, canWrite: true, download: null };
+    if (!claude?.use) {
+      // обычный сайт (не claude.ai): общая таблица на Supabase
+      if (SUPABASE.url && SUPABASE.key) return { db: createSupabaseDb(SUPABASE.url, SUPABASE.key), canWrite: true, downloads: null };
+      return { db: null, canWrite: true, downloads: null };
+    }
     const [db, user, downloads] = await Promise.all([claude.use('db'), claude.use('user'), claude.use('downloads')]);
     let canWrite = true;
     try { if (db && user && user.can('data.write') === false) canWrite = false; } catch (e) { /* неизвестно — считаем, что можно */ }
