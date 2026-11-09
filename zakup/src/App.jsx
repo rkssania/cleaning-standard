@@ -139,7 +139,7 @@ export default function App({ conn }) {
             <ItemsView
               items={mainItems}
               sectionTitles={built.sectionTitles}
-              mode={mode}
+              mode={f.room ? 'room' : mode}
               query={f.q}
               room={f.room}
               extras={extras}

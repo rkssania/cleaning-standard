@@ -67,17 +67,24 @@ function groups(items, mode, query = '', room = '') {
   return [...new Set(items.map((i) => i.category))].map((c) => ({ cat: c, list: items.filter((i) => i.category === c) }));
 }
 
-// Количество в этом помещении: правится прямо здесь, общее количество станет суммой по помещениям
-function RoomQty({ it, edit }) {
-  if (it.roomQty === undefined) return null;
+// Количество в выбранном помещении правится прямо в колонке «Кол-во»; общее количество становится суммой по помещениям
+function QtyBlock({ it, edit }) {
+  if (it.roomQty === undefined) {
+    return (
+      <div className="space-y-0.5">
+        <QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => edit(it.key, { qty: v })} />
+        {it.qtyEdited && <button className="block text-[11px] text-slate-600 underline" onClick={() => edit(it.key, { qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
+      </div>
+    );
+  }
   const set = (v) => {
     const entries = it.roomEntries.some(([r]) => r === it.roomName) ? it.roomEntries.map(([r, q]) => (r === it.roomName ? [r, v] : [r, q])) : [...it.roomEntries, [it.roomName, v]];
     edit(it.key, { rooms: entries, qty: '' });
   };
   return (
-    <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-brand">
-      <span>В этом помещении:</span>
+    <div className="space-y-0.5">
       <QtyStepper value={it.roomQty || 0} onCommit={set} />
+      <div className="text-[11px] text-slate-600">в этом помещении · всего {fmtNum(it.qty)}</div>
     </div>
   );
 }
@@ -96,13 +103,7 @@ function Cell({ col, it, edit }) {
   const e = (patch) => edit(it.key, patch);
   switch (col) {
     case 'where': return <Rooms entries={it.roomEntries} strike={strike(it)} />;
-    case 'qty':
-      return (
-        <div className="space-y-0.5">
-          <QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => e({ qty: v })} />
-          {it.qtyEdited && <button className="block text-[11px] text-slate-600 underline" onClick={() => e({ qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
-        </div>
-      );
+    case 'qty': return <QtyBlock it={it} edit={edit} />;
     case 'category': return <span className="text-xs">{it.category}</span>;
     case 'china': return <span className="tabular-nums">{it.china || ''}</span>;
     case 'buy': return <span className="text-base font-bold tabular-nums">{it.buy}</span>;
@@ -188,7 +189,6 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
                   <td className={`sticky left-10 z-10 min-w-[18rem] max-w-[24rem] border-b border-white bg-inherit px-2 py-2 ${strike(it)}`}>
                     <button className="text-left font-semibold leading-snug hover:underline" title="Открыть карточку позиции" onClick={() => onOpen(it)}>{it.name}</button>
                     <FilesMark it={it} />
-                    <RoomQty it={it} edit={edit} />
                     {spec(it) && <div className="mt-0.5 text-xs font-normal opacity-75">{spec(it)}</div>}
                     {it.aliasNames.length > 0 && <div className="text-xs font-normal opacity-60">= {it.aliasNames.join(', ')}</div>}
                   </td>
@@ -251,14 +251,10 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
                 <button className="shrink-0 rounded-full bg-white/70 p-2" aria-label="Подробнее" onClick={() => onOpen(it)}><Pencil size={15} /></button>
               </div>
               {spec(it) && <div className={`mt-1 text-xs opacity-80 ${strike(it)}`}>{spec(it)}</div>}
-              <RoomQty it={it} edit={edit} />
               {mode !== 'cat' && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
               <div className="mt-2"><Rooms entries={it.roomEntries} strike={strike(it)} max={4} /></div>
               <div className="mt-2.5 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                <div className="space-y-0.5">
-                  <QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => edit(it.key, { qty: v })} />
-                  {it.qtyEdited && <button className="block text-[11px] text-slate-600 underline" onClick={() => edit(it.key, { qty: '' })}>из заявки: {fmtNum(it.baseQty)}</button>}
-                </div>
+                <QtyBlock it={it} edit={edit} />
                 <StatusCell it={it} onEdit={(p) => edit(it.key, p)} />
               </div>
               {showBuy && <div className="mt-2 text-xs">Из Китая: <b>{it.china}</b> · Докупить: <b>{it.buy}</b></div>}
