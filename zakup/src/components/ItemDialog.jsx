@@ -40,7 +40,7 @@ function RoomsEditor({ it, onSave }) {
         <button className="btn btn-primary !py-1 text-xs" onClick={save}>Сохранить</button>
         <button className="btn !py-1 text-xs" onClick={() => setRows(null)}>Отмена</button>
       </div>
-      <p className="text-xs text-slate-500">Общее количество станет суммой по помещениям (если вы не задали его вручную).</p>
+      <p className="text-xs text-slate-500">Общее количество станет суммой по помещениям.</p>
     </div>
   );
 }
@@ -129,7 +129,7 @@ export default function ItemDialog({ item, store, onClose }) {
         <div>
           <div className="mb-1 text-xs font-medium text-slate-500">Где стоит</div>
           <div className="mb-2"><Rooms entries={it.roomEntries} max={50} /></div>
-          <RoomsEditor it={it} onSave={(v) => e({ rooms: v })} />
+          <RoomsEditor it={it} onSave={(v) => e({ rooms: v, qty: '' })} />
         </div>
         {[it.size, ...it.notes].filter(Boolean).length > 0 && <p className="text-sm"><b>Характеристики:</b> {[it.size, ...it.notes].filter(Boolean).join('; ')}</p>}
         {it.comments.length > 0 && <p className="text-sm"><b>Комментарий СД:</b> {it.comments.join('; ')}</p>}

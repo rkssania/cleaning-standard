@@ -239,3 +239,11 @@ test('разделы по ТЗ: мебель и навигация после о
   const b3 = buildList({ ...emptyState(), sd, sections, edits: { [k]: { responsible: 'Иванов' } } });
   assert.equal(b3.items[1].responsible, 'Иванов');
 });
+
+test('количество по помещениям: после правки помещений общее = сумма, ручное общее количество не мешает', () => {
+  const key = looseKey('Кровать функциональная');
+  const edits = { [key]: { rooms: [['Реанимация', 6], ['Палата 101', 3], ['Новая палата', 2]], qty: '' } };
+  const bed = buildList(st({ edits })).items.find((i) => i.name === 'Кровать функциональная');
+  assert.equal(bed.qty, 11);
+  assert.deepEqual(bed.roomEntries.map(([r]) => r), ['Реанимация', 'Палата 101', 'Новая палата']);
+});
