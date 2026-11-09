@@ -67,6 +67,9 @@ function groups(items, mode, query = '', room = '') {
   return [...new Set(items.map((i) => i.category))].map((c) => ({ cat: c, list: items.filter((i) => i.category === c) }));
 }
 
+// в режиме одного помещения показываем только его (в других помещениях позиция может стоять тоже, но здесь это не нужно)
+const shownRooms = (it) => (it.roomName ? it.roomEntries.filter(([r]) => r === it.roomName) : it.roomEntries);
+
 // Количество в выбранном помещении правится прямо в колонке «Кол-во»; общее количество становится суммой по помещениям
 function QtyBlock({ it, edit }) {
   if (it.roomQty === undefined) {
@@ -102,7 +105,7 @@ function StatusCell({ it, onEdit, compact }) {
 function Cell({ col, it, edit }) {
   const e = (patch) => edit(it.key, patch);
   switch (col) {
-    case 'where': return <Rooms entries={it.roomEntries} strike={strike(it)} />;
+    case 'where': return <Rooms entries={shownRooms(it)} strike={strike(it)} />;
     case 'qty': return <QtyBlock it={it} edit={edit} />;
     case 'category': return <span className="text-xs">{it.category}</span>;
     case 'china': return <span className="tabular-nums">{it.china || ''}</span>;
@@ -252,7 +255,7 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
               </div>
               {spec(it) && <div className={`mt-1 text-xs opacity-80 ${strike(it)}`}>{spec(it)}</div>}
               {mode !== 'cat' && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
-              <div className="mt-2"><Rooms entries={it.roomEntries} strike={strike(it)} max={4} /></div>
+              <div className="mt-2"><Rooms entries={shownRooms(it)} strike={strike(it)} max={4} /></div>
               <div className="mt-2.5 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                 <QtyBlock it={it} edit={edit} />
                 <StatusCell it={it} onEdit={(p) => edit(it.key, p)} />
