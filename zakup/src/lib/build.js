@@ -1,6 +1,7 @@
 // Сборка единого списка из заявки СД, потребности КС Астана и закупа из Китая.
 import { looseKey, toNum, similarity } from './normalize.js';
 import { CATEGORIES, classify } from './categories.js';
+import { canonRoom } from './rooms.js';
 
 export const STAGES = [
   ['not_started', 'Не начато'],
@@ -59,8 +60,15 @@ export function resolveKey(key, aliases) {
   return key;
 }
 
+// помещения из заявки могут называться по-разному: приводим к одному названию и складываем количество
+function canonMap(entries) {
+  const map = new Map();
+  for (const [r, q] of entries) addRoom(map, String(r), toNum(q));
+  return map;
+}
+
 function addRoom(map, room, qty) {
-  const r = (room || '').trim() || 'Без помещения';
+  const r = canonRoom((room || '').trim() || 'Без помещения');
   map.set(r, (map.get(r) || 0) + qty);
 }
 
@@ -118,7 +126,7 @@ export function buildList(state) {
     if (base.has(key)) continue;
     base.set(key, {
       key, name: m.name, size: m.size || '', notes: [], comments: [], qty: toNum(m.qty),
-      rooms: new Map([[m.room || 'Без помещения', toNum(m.qty)]]), srcs: new Set(['вручную']), source: 'manual', sdQty: 0, ksQty: 0, manualId: m.id,
+      rooms: canonMap([[m.room || 'Без помещения', toNum(m.qty)]]), srcs: new Set(['вручную']), source: 'manual', sdQty: 0, ksQty: 0, manualId: m.id,
     });
   }
 
@@ -131,7 +139,7 @@ export function buildList(state) {
       continue;
     }
     // помещения можно переопределить вручную; тогда количество по умолчанию — сумма по помещениям
-    const roomMap = Array.isArray(ed.rooms) && ed.rooms.length ? new Map(ed.rooms.map(([r, q]) => [String(r), toNum(q)])) : b.rooms;
+    const roomMap = Array.isArray(ed.rooms) && ed.rooms.length ? canonMap(ed.rooms) : b.rooms;
     const baseQty = roomMap === b.rooms ? b.qty : [...roomMap.values()].reduce((a, x) => a + x, 0);
     const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : baseQty;
     const done = ed.done === true;
@@ -199,7 +207,7 @@ export function buildList(state) {
       removed.push({ key, name: ed.name || r.name, qty: toNum(r.qty), rooms: places.map(([p, q]) => `${p} — ${q}`).join('; '), sources: [sec.title] });
       return;
     }
-    const roomMap = Array.isArray(ed.rooms) && ed.rooms.length ? new Map(ed.rooms.map(([a, q]) => [String(a), toNum(q)])) : new Map(places);
+    const roomMap = Array.isArray(ed.rooms) && ed.rooms.length ? canonMap(ed.rooms) : canonMap(places);
     const baseQty = roomMap.size && Array.isArray(ed.rooms) && ed.rooms.length ? [...roomMap.values()].reduce((a, x) => a + x, 0) : toNum(r.qty);
     const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : baseQty;
     const done = ed.done === true;
