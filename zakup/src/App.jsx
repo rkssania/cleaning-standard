@@ -32,7 +32,10 @@ export default function App({ conn }) {
     const q = f.q.trim().toLowerCase();
     return built.extras.filter((e) => (!q || e.name.toLowerCase().includes(q)) && (!f.need || (f.need === 'undecided' ? !e.need : e.need === f.need)));
   }, [built.extras, f, showExtras]);
-  const mainItems = f.status === 'extra' ? [] : items;
+  const rooms = useMemo(() => [...new Set(built.items.flatMap((i) => i.roomList))].sort(new Intl.Collator('ru', { numeric: true, sensitivity: 'base' }).compare), [built.items]);
+  // при выбранном помещении у каждой позиции показываем, сколько её в этом помещении
+  const roomItems = f.room ? items.map((i) => ({ ...i, roomQty: (i.roomEntries.find(([r]) => r === f.room) || [])[1] })) : items;
+  const mainItems = f.status === 'extra' ? [] : roomItems;
   const undecided = built.items.filter((i) => i.canDecide && !i.need).length + built.extras.filter((e) => !e.need).length;
 
   const suppliers = [...new Set(built.items.map((i) => i.supplier).filter(Boolean))];
@@ -105,6 +108,10 @@ export default function App({ conn }) {
           <>
             <div className="flex flex-wrap items-center gap-2">
               <div className="min-w-0 flex-1 lg:max-w-sm"><Filters f={f} setF={setF} /></div>
+              <select className="inp !w-auto max-w-[14rem] !border-brand !py-2 font-medium text-brand" aria-label="Помещение" value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })}>
+                <option value="">Все помещения</option>
+                {rooms.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
               <div className="inline-flex overflow-hidden rounded border border-brand bg-white text-xs font-medium">
                 {[['cat', 'По категориям'], ['room', 'По помещениям'], ['flat', 'Одним списком']].map(([id, label]) => (
                   <button key={id} className={`px-3 py-2 ${mode === id ? 'bg-brand text-white' : 'text-brand'}`} onClick={() => setModeSaved(id)}>{label}</button>
@@ -116,6 +123,7 @@ export default function App({ conn }) {
               sectionTitles={built.sectionTitles}
               mode={mode}
               query={f.q}
+              room={f.room}
               extras={extras}
               edit={store.edit}
               onHelp={() => setDlg({ type: 'help' })}

@@ -45,7 +45,7 @@ function loadCols() {
 const rcmp = new Intl.Collator('ru', { numeric: true, sensitivity: 'base' }).compare;
 
 // mode: 'cat' — по категориям, 'room' — по помещениям (позиция повторяется в каждом своём помещении), 'flat' — одним списком
-function groups(items, mode, query = '') {
+function groups(items, mode, query = '', room = '') {
   if (mode === 'flat') return [{ cat: null, list: items }];
   if (mode === 'room') {
     const by = new Map();
@@ -59,7 +59,8 @@ function groups(items, mode, query = '') {
     let names = [...by.keys()].sort((a, b) => (a === 'Без помещения') - (b === 'Без помещения') || rcmp(a, b));
     const q = query.trim().toLowerCase();
     const hit = q ? names.filter((r) => r.toLowerCase().includes(q)) : [];
-    if (hit.length) names = hit; // в поиске указано помещение — показываем только его
+    if (room) names = names.filter((r) => r === room);
+    else if (hit.length) names = hit; // в поиске указано помещение — показываем только его
     return names.map((r) => ({ cat: r, list: by.get(r).sort((a, b) => a.no - b.no) }));
   }
   // категории в порядке появления: сначала обычные, потом разделы по ТЗ
@@ -149,7 +150,7 @@ function ColumnsMenu({ vis, setVis }) {
   );
 }
 
-function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggleCat, mode, query }) {
+function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggleCat, mode, query, room }) {
   const cols = COLS.filter((c) => (c.flatOnly ? mode === 'flat' : vis.has(c.id)));
   const span = cols.length + 3;
   const TH = 'whitespace-nowrap px-2 py-2 text-xs font-semibold';
@@ -165,7 +166,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
           </tr>
         </thead>
         <tbody>
-          {groups(items, mode, query).map((g) => (
+          {groups(items, mode, query, room).map((g) => (
             <React.Fragment key={g.cat || 'all'}>
               {g.cat && <CatHeader g={g} open={!collapsed.has(g.cat)} toggle={() => toggleCat(g.cat)} colSpan={span} />}
               {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
@@ -215,7 +216,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
   );
 }
 
-function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat, mode, query, vis }) {
+function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat, mode, query, room, vis }) {
   const showMoney = vis.has('supplier') || vis.has('price') || vis.has('stage');
   const showBuy = vis.has('china') || vis.has('buy');
   const head = (g, dark) => (
@@ -227,7 +228,7 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
   );
   return (
     <div className="space-y-3 lg:hidden">
-      {groups(items, mode, query).map((g) => (
+      {groups(items, mode, query, room).map((g) => (
         <div key={g.cat || 'all'} className="space-y-2">
           {g.cat && head(g)}
           {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
