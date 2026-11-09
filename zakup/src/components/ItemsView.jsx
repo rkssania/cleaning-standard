@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Columns3, EyeOff, Link2, Paperclip, Pencil } from 'lucide-react';
 import { STAGES } from '../lib/build.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
-import { EditInput, NeedBlock, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
+import { EditInput, NeedBlock, PersonSelect, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
 
 const FilesMark = ({ it }) => (it.files?.length ? <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-xs font-normal text-slate-600" title="Есть вложения"><Paperclip size={12} />{it.files.length}</span> : null);
 const strike = (it) => (['china', 'ordering'].includes(it.status) ? 'line-through decoration-2 decoration-green-800/70' : '');
@@ -23,11 +23,11 @@ const COLS = [
   { id: 'price', label: 'Цена, ₸', hint: 'Цена за единицу', def: false, w: 'min-w-[7rem]', right: true },
   { id: 'sum', label: 'Сумма, ₸', hint: 'Докупить × цена', def: false, w: 'w-[7rem]', right: true },
   { id: 'stage', label: 'Этап закупа', def: false, w: 'min-w-[9.5rem]' },
-  { id: 'resp', label: 'Ответственный', def: false, w: 'min-w-[9rem]' },
+  { id: 'resp', label: 'Ответственный', def: true, w: 'min-w-[15rem]' },
   { id: 'deadline', label: 'Срок поставки', def: false, w: 'min-w-[10rem]' },
   { id: 'comment', label: 'Комментарий', def: false, w: 'min-w-[12rem]' },
 ];
-const LS = 'ks-zakup-cols3';
+const LS = 'ks-zakup-cols4';
 const PRESETS = [
   ['Простой', ['where', 'qty', 'status']],
   ['Закуп', ['where', 'qty', 'china', 'buy', 'status', 'supplier', 'price', 'sum', 'stage']],
@@ -116,7 +116,7 @@ function Cell({ col, it, edit }) {
           {STAGES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       );
-    case 'resp': return <EditInput list="people" value={it.responsible} onCommit={(v) => e({ responsible: v })} />;
+    case 'resp': return <PersonSelect className="!py-1 text-xs" value={it.responsible} onCommit={(v) => e({ responsible: v })} />;
     case 'deadline': return <EditInput type="date" value={it.deadline} onCommit={(v) => e({ deadline: v })} />;
     case 'comment': return <EditInput value={it.comment} onCommit={(v) => e({ comment: v })} />;
     default: return null;

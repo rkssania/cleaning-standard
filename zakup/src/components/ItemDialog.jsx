@@ -5,7 +5,7 @@ import { CATEGORIES } from '../lib/categories.js';
 import { download } from '../lib/excelExport.js';
 import { prepareFile } from '../lib/files.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { EditInput, Field, Modal, NeedBlock, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
+import { EditInput, Field, Modal, NeedBlock, PersonSelect, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
 /** Редактор помещений: «где стоит» и сколько штук в каждом. */
@@ -145,7 +145,7 @@ export default function ItemDialog({ item, store, onClose }) {
         </div>
         <div className="text-right text-sm">Сумма (докупить × цена): <b>{fmtMoney(it.sum)} ₸</b></div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Ответственный"><EditInput list="people" value={it.responsible} onCommit={(v) => e({ responsible: v })} /></Field>
+          <Field label="Ответственный"><PersonSelect value={it.responsible} onCommit={(v) => e({ responsible: v })} /></Field>
           <Field label="Срок поставки"><EditInput type="date" value={it.deadline} onCommit={(v) => e({ deadline: v })} /></Field>
           <Field label="Этап закупа">
             <select className="inp" value={it.stage} onChange={(ev) => e({ stage: ev.target.value })}>{STAGES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>

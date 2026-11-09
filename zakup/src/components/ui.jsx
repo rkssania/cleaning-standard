@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Minus, Plus, X } from 'lucide-react';
 import { STATUS } from '../lib/build.js';
+import { PEOPLE } from '../config.js';
 
 export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
@@ -194,5 +195,30 @@ export function Sources({ list }) {
         ))}
       </span>
     </div>
+  );
+}
+
+// «Сергазина Ж.Х.» и «Сергазина Жанара Хамитовна» — один человек
+const matchPerson = (v) => {
+  if (!v) return '';
+  if (PEOPLE.includes(v)) return v;
+  const m = String(v).trim().match(/^(\S+)\s+(\S)\.?\s*(\S)?\.?$/);
+  if (!m) return '';
+  const [, sur, a, b] = m;
+  return PEOPLE.find((p) => {
+    const [s, n, o] = p.split(' ');
+    return s.toLowerCase() === sur.toLowerCase() && n[0].toLowerCase() === a.toLowerCase() && (!b || o[0].toLowerCase() === b.toLowerCase());
+  }) || '';
+};
+
+/** Ответственный: выбор из списка сотрудников. Прежние значения, которых нет в списке, сохраняются. */
+export function PersonSelect({ value, onCommit, className = '' }) {
+  const matched = matchPerson(value);
+  return (
+    <select className={`inp ${className}`} aria-label="Ответственный" value={matched || value || ''} onChange={(e) => onCommit(e.target.value)}>
+      <option value="">— не выбран —</option>
+      {PEOPLE.map((p) => <option key={p} value={p}>{p}</option>)}
+      {value && !matched && <option value={value}>{value}</option>}
+    </select>
   );
 }
