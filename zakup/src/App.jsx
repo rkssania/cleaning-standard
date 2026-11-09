@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { CircleHelp, FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
+import { CircleHelp, FileDown, FileUp, LayoutList, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
 import { useStore } from './lib/store.js';
 import { resolveKey } from './lib/build.js';
 import { looseKey } from './lib/normalize.js';
+import { ROOMS, ROOM_LABELS, roomLabel } from './lib/rooms.js';
 import { exportXlsx, download } from './lib/excelExport.js';
 import { DEMO } from './lib/demo.js';
 import Filters, { applyFilters } from './components/Filters.jsx';
@@ -34,7 +35,10 @@ export default function App({ conn }) {
     const q = f.q.trim().toLowerCase();
     return built.extras.filter((e) => (!q || e.name.toLowerCase().includes(q)) && (!f.need || (f.need === 'undecided' ? !e.need : e.need === f.need)));
   }, [built.extras, f, showExtras]);
-  const rooms = useMemo(() => [...new Set(built.items.flatMap((i) => i.roomList))].sort(new Intl.Collator('ru', { numeric: true, sensitivity: 'base' }).compare), [built.items]);
+  // помещения по плану (даже если в них пока нет позиций), потом прочие названия из таблицы
+  const itemRooms = useMemo(() => [...new Set(built.items.flatMap((i) => i.roomList))], [built.items]);
+  const otherRooms = useMemo(() => itemRooms.filter((r) => !ROOM_LABELS.includes(r)).sort(new Intl.Collator('ru', { numeric: true, sensitivity: 'base' }).compare), [itemRooms]);
+  const rooms = useMemo(() => [...ROOM_LABELS, ...otherRooms], [otherRooms]);
   // при выбранном помещении у каждой позиции показываем, сколько её в этом помещении
   const roomItems = f.room ? items.map((i) => ({ ...i, roomName: f.room, roomQty: (i.roomEntries.find(([r]) => r === f.room) || [])[1] })) : items;
   // позиция с таким названием уже есть — добавляем к ней помещение (или увеличиваем число в нём), иначе создаём новую
@@ -61,7 +65,7 @@ export default function App({ conn }) {
 
   return (
     <div className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
-      <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 border-b-2 border-brand bg-white">
+      <header className="sticky top-[env(safe-area-inset-top,0px)] z-[45] border-b-2 border-brand bg-white">
         <div className="mx-auto flex max-w-[1800px] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4">
           <div className="shrink-0" title="Центр гематологии"><Logo variant="mark" className="h-10 w-10 object-contain sm:h-12 sm:w-12" /></div>
           <div className="min-w-0 flex-1 leading-none">
@@ -82,6 +86,7 @@ export default function App({ conn }) {
                 <MenuItem icon={CircleHelp} onClick={() => setDlg({ type: 'help' })}>Подсказки</MenuItem>
                 <MenuItem icon={Link2} onClick={() => setDlg({ type: 'links' })}>Сверка и связи{suggestions.length ? ` (${suggestions.length})` : ''}</MenuItem>
                 <MenuItem icon={Plus} onClick={() => setDlg({ type: 'add' })}>Добавить позицию вручную</MenuItem>
+                <MenuItem icon={LayoutList} onClick={() => setDlg({ type: 'rooms' })}>Помещения (по плану)</MenuItem>
                 {!store.shared && <MenuItem icon={Wand2} onClick={() => store.setImported(DEMO)}>Загрузить демо-данные</MenuItem>}
                 <MenuItem icon={Trash2} danger onClick={() => setConfirmClear(true)}>Очистить всё</MenuItem>
               </div>
@@ -122,7 +127,8 @@ export default function App({ conn }) {
               <div className="min-w-0 flex-1 lg:max-w-sm"><Filters f={f} setF={setF} /></div>
               <select className="inp !w-auto max-w-[14rem] !border-brand !py-2 font-medium text-brand" aria-label="Помещение" value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })}>
                 <option value="">Все помещения</option>
-                {rooms.map((r) => <option key={r} value={r}>{r}</option>)}
+                <optgroup label="По плану этажа">{ROOM_LABELS.map((r) => <option key={r} value={r}>{r}</option>)}</optgroup>
+                {otherRooms.length > 0 && <optgroup label="Прочие">{otherRooms.map((r) => <option key={r} value={r}>{r}</option>)}</optgroup>}
               </select>
               <div className="inline-flex overflow-hidden rounded border border-brand bg-white text-xs font-medium">
                 {[['cat', 'По категориям'], ['room', 'По помещениям'], ['flat', 'Одним списком']].map(([id, label]) => (
@@ -177,6 +183,29 @@ export default function App({ conn }) {
           <div className="mt-4 flex gap-2">
             <button className="btn flex-1" onClick={() => setConfirmClear(false)}>Отмена</button>
             <button className="btn flex-1 !border-red-700 !bg-red-700 !text-white" onClick={() => { store.reset(); setConfirmClear(false); }}>Удалить всё</button>
+          </div>
+        </Modal>
+      )}
+      {dlg?.type === 'rooms' && (
+        <Modal title="Помещения по плану этажа" wide onClose={() => setDlg(null)}>
+          <p className="mb-2 text-xs text-slate-500">Названия по навигации. Нажмите на помещение, чтобы показать его позиции.</p>
+          <div className="max-h-[65dvh] overflow-auto rounded border border-slate-300">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-brand text-left text-xs text-white"><tr><th className="px-2 py-1.5">№</th><th className="px-2 py-1.5">Помещение</th><th className="px-2 py-1.5 text-right">м²</th><th className="px-2 py-1.5 text-right">Позиций</th></tr></thead>
+              <tbody>
+                {ROOMS.map(([no, name, area]) => {
+                  const label = roomLabel(no);
+                  const n = built.items.filter((i) => i.roomList.includes(label)).length;
+                  return (
+                    <tr key={no} className="cursor-pointer border-t border-slate-200 hover:bg-brand-light" onClick={() => { setF({ ...f, room: label }); setDlg(null); }}>
+                      <td className="px-2 py-1.5 tabular-nums">{no}</td><td className="px-2 py-1.5 font-medium">{name}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{area.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{n || ''}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </Modal>
       )}

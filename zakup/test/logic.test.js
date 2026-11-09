@@ -7,6 +7,7 @@ import { readWorkbook, detectColumns, parseSheet, guessSheets } from '../src/lib
 import { exportXlsx } from '../src/lib/excelExport.js';
 import { looseKey } from '../src/lib/normalize.js';
 import { classify } from '../src/lib/categories.js';
+import { canonRoom } from '../src/lib/rooms.js';
 
 const st = (extra = {}) => ({ ...emptyState(), ...DEMO, ...extra });
 
@@ -213,7 +214,7 @@ test('правки позиции: убрать, переименовать, п�
   const kw = looseKey('Весы');
   const b = buildList({ ...emptyState(), sd, edits: { [kw]: { name: 'Весы медицинские', rooms: [['Манипуляционная', 1]] }, [looseKey('Дверь')]: { done: true } } });
   const w = b.items.find((i) => i.key === kw);
-  assert.equal(w.name, 'Весы медицинские'); assert.equal(w.qty, 1); assert.equal(w.rooms, 'Манипуляционная — 1');
+  assert.equal(w.name, 'Весы медицинские'); assert.equal(w.qty, 1); assert.equal(w.rooms, 'Манипуляционная (пом. 17) — 1');
   const d = b.items.find((i) => i.name === 'Дверь');
   assert.equal(d.status, 'done'); assert.equal(d.buy, 0);
   const gone = buildList({ ...emptyState(), sd, edits: { [kw]: { removed: true } } });
@@ -246,4 +247,14 @@ test('количество по помещениям: после правки п
   const bed = buildList(st({ edits })).items.find((i) => i.name === 'Кровать функциональная');
   assert.equal(bed.qty, 11);
   assert.deepEqual(bed.roomEntries.map(([r]) => r), ['Реанимация', 'Палата 101', 'Новая палата']);
+});
+
+test('помещения приводятся к названию по плану и навигации', () => {
+  assert.equal(canonRoom('Кабинет приема, бесед'), 'Кабинет приёма (пом. 45)');
+  assert.equal(canonRoom('Палата 48 (ШО)'), 'Палата П1 (пом. 48)');
+  assert.equal(canonRoom('П5 · пом. 10'), 'Палата П5 (пом. 10)');
+  assert.equal(canonRoom('Санузел, в палате П9 (пом. 18), у двери санузла (пом. 20)'), 'Санузел, палата П9 (пом. 20)');
+  assert.equal(canonRoom('Тамбур 32, палата 30 (ШО)'), 'Тамбур, палата П8 (пом. 32)');
+  assert.equal(canonRoom('Склад НПВС (НПВ склад)'), 'Склад НПВ (пом. 16)');
+  assert.equal(canonRoom('Палата реанимации'), 'Палата реанимации'); // незнакомые названия не меняются
 });
