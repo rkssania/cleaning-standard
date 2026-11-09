@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Minus, Plus, X } from 'lucide-react';
 import { STATUS } from '../lib/build.js';
-import { PEOPLE } from '../config.js';
+import { PEOPLE, SURNAME_ALIASES } from '../config.js';
 
 export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
@@ -207,7 +207,8 @@ const matchPerson = (v) => {
   const [, sur, a, b] = m;
   return PEOPLE.find((p) => {
     const [s, n, o] = p.split(' ');
-    return s.toLowerCase() === sur.toLowerCase() && n[0].toLowerCase() === a.toLowerCase() && (!b || o[0].toLowerCase() === b.toLowerCase());
+    const want = sur.toLowerCase();
+    return s.toLowerCase() === (SURNAME_ALIASES[want] || want) && n[0].toLowerCase() === a.toLowerCase() && (!b || o[0].toLowerCase() === b.toLowerCase());
   }) || '';
 };
 
