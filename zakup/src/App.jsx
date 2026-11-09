@@ -22,8 +22,8 @@ export default function App({ conn }) {
   const [dlg, setDlg] = useState(null); // {type, ...}
   const [menu, setMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [grouped, setGrouped] = useState(() => { try { return localStorage.getItem('ks-grouped') !== '0'; } catch (e) { return true; } });
-  const setGroupedSaved = (v) => { setGrouped(v); try { localStorage.setItem('ks-grouped', v ? '1' : '0'); } catch (e) { /* без сохранения */ } };
+  const [mode, setMode] = useState(() => { try { return localStorage.getItem('ks-view') || (localStorage.getItem('ks-grouped') === '0' ? 'flat' : 'cat'); } catch (e) { return 'cat'; } });
+  const setModeSaved = (v) => { setMode(v); try { localStorage.setItem('ks-view', v); } catch (e) { /* без сохранения */ } };
 
   const items = useMemo(() => applyFilters(built.items, f), [built.items, f]);
   const showExtras = !f.category && !f.room && !f.supplier && !f.responsible && !f.stage && (!f.status || f.status === 'extra');
@@ -106,14 +106,16 @@ export default function App({ conn }) {
             <div className="flex flex-wrap items-center gap-2">
               <div className="min-w-0 flex-1 lg:max-w-sm"><Filters f={f} setF={setF} /></div>
               <div className="inline-flex overflow-hidden rounded border border-brand bg-white text-xs font-medium">
-                <button className={`px-3 py-2 ${grouped ? 'bg-brand text-white' : 'text-brand'}`} onClick={() => setGroupedSaved(true)}>По категориям</button>
-                <button className={`px-3 py-2 ${!grouped ? 'bg-brand text-white' : 'text-brand'}`} onClick={() => setGroupedSaved(false)}>Одним списком</button>
+                {[['cat', 'По категориям'], ['room', 'По помещениям'], ['flat', 'Одним списком']].map(([id, label]) => (
+                  <button key={id} className={`px-3 py-2 ${mode === id ? 'bg-brand text-white' : 'text-brand'}`} onClick={() => setModeSaved(id)}>{label}</button>
+                ))}
               </div>
             </div>
             <ItemsView
               items={mainItems}
               sectionTitles={built.sectionTitles}
-              grouped={grouped}
+              mode={mode}
+              query={f.q}
               extras={extras}
               edit={store.edit}
               onHelp={() => setDlg({ type: 'help' })}

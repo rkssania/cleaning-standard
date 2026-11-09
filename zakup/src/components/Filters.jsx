@@ -7,7 +7,7 @@ export default function Filters({ f, setF }) {
   return (
     <div className="relative min-w-0 lg:max-w-sm">
       <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-      <input className="inp !pl-8" placeholder="Поиск по названию" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
+      <input className="inp !pl-8" placeholder="Поиск по названию или помещению" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
     </div>
   );
 }
@@ -22,6 +22,6 @@ export function applyFilters(items, f) {
     (!f.supplier || (f.supplier === NO_SUPPLIER ? !i.supplier : i.supplier === f.supplier)) &&
     (!f.responsible || (f.responsible === NO_SUPPLIER ? !i.responsible : i.responsible === f.responsible)) &&
     (!f.stage || i.stage === f.stage) &&
-    (!q || i.name.toLowerCase().includes(q) || (i.origName || '').toLowerCase().includes(q) || i.aliasNames.some((n) => n.toLowerCase().includes(q)))
+    (!q || i.name.toLowerCase().includes(q) || (i.origName || '').toLowerCase().includes(q) || i.aliasNames.some((n) => n.toLowerCase().includes(q)) || i.roomList.some((r) => r.toLowerCase().includes(q)))
   );
 }
