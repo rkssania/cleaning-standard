@@ -42,11 +42,31 @@ function loadCols() {
   return new Set(COLS.filter((c) => c.def).map((c) => c.id));
 }
 
-function groups(items, grouped) {
-  if (!grouped) return [{ cat: null, list: items }];
+const rcmp = new Intl.Collator('ru', { numeric: true, sensitivity: 'base' }).compare;
+
+// mode: 'cat' — по категориям, 'room' — по помещениям (позиция повторяется в каждом своём помещении), 'flat' — одним списком
+function groups(items, mode, query = '') {
+  if (mode === 'flat') return [{ cat: null, list: items }];
+  if (mode === 'room') {
+    const by = new Map();
+    for (const it of items) {
+      const entries = it.roomEntries?.length ? it.roomEntries : [['Без помещения', it.qty]];
+      for (const [room, q] of entries) {
+        if (!by.has(room)) by.set(room, []);
+        by.get(room).push({ ...it, roomQty: q });
+      }
+    }
+    let names = [...by.keys()].sort((a, b) => (a === 'Без помещения') - (b === 'Без помещения') || rcmp(a, b));
+    const q = query.trim().toLowerCase();
+    const hit = q ? names.filter((r) => r.toLowerCase().includes(q)) : [];
+    if (hit.length) names = hit; // в поиске указано помещение — показываем только его
+    return names.map((r) => ({ cat: r, list: by.get(r).sort((a, b) => a.no - b.no) }));
+  }
   // категории в порядке появления: сначала обычные, потом разделы по ТЗ
   return [...new Set(items.map((i) => i.category))].map((c) => ({ cat: c, list: items.filter((i) => i.category === c) }));
 }
+
+const roomNote = (it) => (it.roomQty !== undefined ? <div className="mt-0.5 text-xs font-semibold text-brand">В этом помещении: {fmtNum(it.roomQty)}</div> : null);
 
 /** Статус: красные позиции показывают только «НАДО ЛИ?» (один раз), остальные — цветную метку. */
 function StatusCell({ it, onEdit, compact }) {
@@ -129,8 +149,8 @@ function ColumnsMenu({ vis, setVis }) {
   );
 }
 
-function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggleCat, grouped }) {
-  const cols = COLS.filter((c) => (c.flatOnly ? !grouped : vis.has(c.id)));
+function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggleCat, mode, query }) {
+  const cols = COLS.filter((c) => (c.flatOnly ? mode === 'flat' : vis.has(c.id)));
   const span = cols.length + 3;
   const TH = 'whitespace-nowrap px-2 py-2 text-xs font-semibold';
   return (
@@ -145,15 +165,16 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
           </tr>
         </thead>
         <tbody>
-          {groups(items, grouped).map((g) => (
+          {groups(items, mode, query).map((g) => (
             <React.Fragment key={g.cat || 'all'}>
               {g.cat && <CatHeader g={g} open={!collapsed.has(g.cat)} toggle={() => toggleCat(g.cat)} colSpan={span} />}
               {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
-                <tr key={it.key} className={`${ROW_STYLE[it.status]} align-top`}>
+                <tr key={`${g.cat}|${it.key}`} className={`${ROW_STYLE[it.status]} align-top`}>
                   <td className="sticky left-0 z-10 border-b border-white bg-inherit px-2 py-2 tabular-nums">{it.no}</td>
                   <td className={`sticky left-10 z-10 min-w-[18rem] max-w-[24rem] border-b border-white bg-inherit px-2 py-2 ${strike(it)}`}>
                     <button className="text-left font-semibold leading-snug hover:underline" title="Открыть карточку позиции" onClick={() => onOpen(it)}>{it.name}</button>
                     <FilesMark it={it} />
+                    {roomNote(it)}
                     {spec(it) && <div className="mt-0.5 text-xs font-normal opacity-75">{spec(it)}</div>}
                     {it.aliasNames.length > 0 && <div className="text-xs font-normal opacity-60">= {it.aliasNames.join(', ')}</div>}
                   </td>
@@ -194,7 +215,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
   );
 }
 
-function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat, grouped, vis }) {
+function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat, mode, query, vis }) {
   const showMoney = vis.has('supplier') || vis.has('price') || vis.has('stage');
   const showBuy = vis.has('china') || vis.has('buy');
   const head = (g, dark) => (
@@ -206,17 +227,18 @@ function Cards({ items, extras, edit, onOpen, onLinkExtra, collapsed, toggleCat,
   );
   return (
     <div className="space-y-3 lg:hidden">
-      {groups(items, grouped).map((g) => (
+      {groups(items, mode, query).map((g) => (
         <div key={g.cat || 'all'} className="space-y-2">
           {g.cat && head(g)}
           {!(g.cat && collapsed.has(g.cat)) && g.list.map((it) => (
-            <article key={it.key} className={`rounded-xl p-3 shadow-sm ${ROW_STYLE[it.status]}`}>
+            <article key={`${g.cat}|${it.key}`} className={`rounded-xl p-3 shadow-sm ${ROW_STYLE[it.status]}`}>
               <div className="flex items-start justify-between gap-2">
                 <button className={`min-w-0 text-left font-semibold leading-snug ${strike(it)}`} onClick={() => onOpen(it)}><span className="mr-1 font-normal opacity-60">{it.no}.</span>{it.name}<FilesMark it={it} /></button>
                 <button className="shrink-0 rounded-full bg-white/70 p-2" aria-label="Подробнее" onClick={() => onOpen(it)}><Pencil size={15} /></button>
               </div>
               {spec(it) && <div className={`mt-1 text-xs opacity-80 ${strike(it)}`}>{spec(it)}</div>}
-              {!grouped && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
+              {roomNote(it)}
+              {mode !== 'cat' && <div className="mt-1 text-[11px] font-medium opacity-60">{it.category}</div>}
               <div className="mt-2"><Rooms entries={it.roomEntries} strike={strike(it)} max={4} /></div>
               <div className="mt-2.5 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                 <div className="space-y-0.5">
