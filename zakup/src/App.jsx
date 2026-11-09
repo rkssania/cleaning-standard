@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { CircleHelp, FileDown, FileUp, Link2, MoreVertical, Plus, Trash2, Wand2 } from 'lucide-react';
 import { useStore } from './lib/store.js';
+import { resolveKey } from './lib/build.js';
+import { looseKey } from './lib/normalize.js';
 import { exportXlsx, download } from './lib/excelExport.js';
 import { DEMO } from './lib/demo.js';
 import Filters, { applyFilters } from './components/Filters.jsx';
@@ -34,7 +36,17 @@ export default function App({ conn }) {
   }, [built.extras, f, showExtras]);
   const rooms = useMemo(() => [...new Set(built.items.flatMap((i) => i.roomList))].sort(new Intl.Collator('ru', { numeric: true, sensitivity: 'base' }).compare), [built.items]);
   // при выбранном помещении у каждой позиции показываем, сколько её в этом помещении
-  const roomItems = f.room ? items.map((i) => ({ ...i, roomQty: (i.roomEntries.find(([r]) => r === f.room) || [])[1] })) : items;
+  const roomItems = f.room ? items.map((i) => ({ ...i, roomName: f.room, roomQty: (i.roomEntries.find(([r]) => r === f.room) || [])[1] })) : items;
+  // позиция с таким названием уже есть — добавляем к ней помещение (или увеличиваем число в нём), иначе создаём новую
+  const addToList = (m) => {
+    const key = resolveKey(looseKey(m.name), state.aliases);
+    const ex = built.items.find((i) => i.key === key);
+    const q = Number(String(m.qty).replace(',', '.')) || 0;
+    const room = (m.room || '').trim() || 'Без помещения';
+    if (!ex) return store.addManual({ ...m, room, qty: q });
+    const entries = ex.roomEntries.some(([r]) => r === room) ? ex.roomEntries.map(([r, n]) => (r === room ? [r, n + q] : [r, n])) : [...ex.roomEntries, [room, q]];
+    store.edit(ex.key, { rooms: entries, qty: '' });
+  };
   const mainItems = f.status === 'extra' ? [] : roomItems;
   const undecided = built.items.filter((i) => i.canDecide && !i.need).length + built.extras.filter((e) => !e.need).length;
 
@@ -168,7 +180,7 @@ export default function App({ conn }) {
           </div>
         </Modal>
       )}
-      {dlg?.type === 'add' && <AddDialog onAdd={store.addManual} onClose={() => setDlg(null)} />}
+      {dlg?.type === 'add' && <AddDialog onAdd={addToList} rooms={rooms} defaultRoom={f.room} onClose={() => setDlg(null)} />}
       {dlg?.type === 'extra' && (
         <Modal title={dlg.extra.name} onClose={() => setDlg(null)}>
           <p className="mb-3 text-sm text-slate-600">Едет из Китая ({dlg.extra.qty} шт), но в потребности под таким названием не найдено. Если это та же позиция под другим названием, свяжите их.</p>
@@ -187,16 +199,17 @@ function MenuItem({ icon: Icon, children, onClick, danger }) {
   );
 }
 
-function AddDialog({ onAdd, onClose }) {
-  const [v, setV] = useState({ name: '', qty: 1, room: '', size: '' });
+function AddDialog({ onAdd, onClose, rooms = [], defaultRoom = '' }) {
+  const [v, setV] = useState({ name: '', qty: 1, room: defaultRoom, size: '' });
   return (
     <Modal title="Новая позиция" onClose={onClose}>
       <div className="space-y-3">
         <Field label="Наименование"><input className="inp" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} autoFocus /></Field>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Количество"><input className="inp" inputMode="numeric" value={v.qty} onChange={(e) => setV({ ...v, qty: e.target.value })} /></Field>
-          <Field label="Помещение"><input className="inp" value={v.room} onChange={(e) => setV({ ...v, room: e.target.value })} /></Field>
+          <Field label="Помещение"><input className="inp" list="rooms-list" value={v.room} onChange={(e) => setV({ ...v, room: e.target.value })} /></Field>
         </div>
+        <datalist id="rooms-list">{rooms.map((r) => <option key={r} value={r} />)}</datalist>
         <Field label="Характеристики / габариты"><input className="inp" value={v.size} onChange={(e) => setV({ ...v, size: e.target.value })} /></Field>
         <button className="btn btn-primary w-full" disabled={!v.name.trim()} onClick={() => { onAdd({ ...v, name: v.name.trim() }); onClose(); }}>Добавить</button>
       </div>
