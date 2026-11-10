@@ -4,7 +4,6 @@ import { STAGES, resolveKey } from '../lib/build.js';
 import { CATEGORIES } from '../lib/categories.js';
 import { download } from '../lib/excelExport.js';
 import { prepareFile } from '../lib/files.js';
-import { fmtMoney } from '../lib/normalize.js';
 import { DeliverySelect, EditInput, Field, Modal, NeedBlock, PersonSelect, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
@@ -140,17 +139,12 @@ export default function ItemDialog({ item, store, onClose }) {
         </div>
         {[it.size, ...it.notes].filter(Boolean).length > 0 && <p className="text-sm"><b>Характеристики:</b> {[it.size, ...it.notes].filter(Boolean).join('; ')}</p>}
         {it.comments.length > 0 && <p className="text-sm"><b>Комментарий СД:</b> {it.comments.join('; ')}</p>}
-        <div className="grid grid-cols-3 gap-2 text-center text-sm">
+        <div className="grid grid-cols-2 gap-2 text-center text-sm">
           <div><div className="text-xs text-slate-500">{it.qtyEdited ? 'Кол-во (изменено)' : 'Кол-во'}</div><div className="pt-1"><QtyStepper value={it.qty} warn={!it.qty} onCommit={(v) => e({ qty: v })} /></div></div>
-          <div><div className="text-xs text-slate-500">Из Китая</div><div className="pt-1.5 text-lg font-semibold">{it.china}</div></div>
           <div><div className="text-xs text-slate-500">Докупить</div><div className="pt-1.5 text-lg font-bold">{it.buy}</div></div>
         </div>
         {it.qtyEdited && <button className="text-xs underline" onClick={() => e({ qty: '' })}>Вернуть количество из источника ({it.baseQty})</button>}
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Поставщик"><EditInput list="suppliers" value={it.supplier} onCommit={(v) => e({ supplier: v })} /></Field>
-          <Field label="Цена за ед., ₸"><EditInput type="number" align="right" value={it.price || ''} onCommit={(v) => e({ price: v })} /></Field>
-        </div>
-        <div className="text-right text-sm">Сумма (докупить × цена): <b>{fmtMoney(it.sum)} ₸</b></div>
+        <Field label="Поставщик"><EditInput list="suppliers" value={it.supplier} onCommit={(v) => e({ supplier: v })} /></Field>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Ответственный"><PersonSelect value={it.responsible} onCommit={(v) => e({ responsible: v })} /></Field>
           <Field label="Срок поставки"><EditInput type="date" value={it.deadline} onCommit={(v) => e({ deadline: v })} /></Field>
