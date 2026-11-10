@@ -70,7 +70,7 @@ export default function App({ conn }) {
           <div className="shrink-0" title="Центр гематологии"><Logo variant="mark" className="h-10 w-10 object-contain sm:h-12 sm:w-12" /></div>
           <div className="min-w-0 flex-1 leading-none">
             <h1 className="truncate text-[15px] font-bold text-brand sm:text-xl">Закуп оборудования</h1>
-            <div className="mt-1 truncate text-xs text-slate-500">Запуск КС · {store.shared ? 'общая таблица' : conn.noAccess ? 'нет доступа' : 'только на этом устройстве'}</div>
+            <div className="mt-1 truncate text-xs text-slate-500">Запуск КС · {store.shared ? 'общая таблица · изменения сохраняются сразу' : conn.noAccess ? 'нет доступа' : 'только на этом устройстве'}</div>
           </div>
           {!conn.noAccess && (<>
           <button className="btn !px-2.5 sm:!px-3" onClick={() => setDlg({ type: 'import' })}>

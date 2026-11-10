@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Columns3, EyeOff, Link2, Paperclip, Pencil } from 'lucide-react';
 import { STAGES } from '../lib/build.js';
 import { fmtMoney, fmtNum } from '../lib/normalize.js';
-import { EditInput, NeedBlock, PersonSelect, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
+import { DeliverySelect, EditInput, NeedBlock, PersonSelect, QtyStepper, ROW_STYLE, Rooms, StatusBadge } from './ui.jsx';
 
 const FilesMark = ({ it }) => (it.files?.length ? <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-xs font-normal text-slate-600" title="Есть вложения"><Paperclip size={12} />{it.files.length}</span> : null);
-const strike = (it) => (['china', 'ordering'].includes(it.status) ? 'line-through decoration-2 decoration-green-800/70' : '');
+const strike = (it) => (['china', 'ordering', 'done'].includes(it.status) ? 'line-through decoration-2 decoration-green-800/70' : '');
 const spec = (it) => [it.size, ...it.notes].filter(Boolean).join('; ');
 const stageLabel = (k) => STAGES.find(([x]) => x === k)?.[1] ?? '';
 const extraQty = (e) => [e.transit && `едет ${e.transit}`, e.ordering && `в оформлении ${e.ordering}`].filter(Boolean).join(', ') + ' шт';
@@ -98,6 +98,7 @@ function StatusCell({ it, onEdit, compact }) {
     <div className="space-y-1">
       {it.status !== 'added' && <StatusBadge status={it.status} partial={it.partial} />}
       {it.canDecide && <NeedBlock compact={compact} it={it} onEdit={onEdit} />}
+      {it.status !== 'declined' && <DeliverySelect value={it.delivery} onChange={(v) => onEdit({ delivery: v, done: '' })} className="block max-w-full" />}
     </div>
   );
 }
@@ -190,7 +191,7 @@ function Table({ items, extras, edit, onOpen, onLinkExtra, vis, collapsed, toggl
                 <tr key={`${g.cat}|${it.key}`} className={`${ROW_STYLE[it.status]} align-top`}>
                   <td className="sticky left-0 z-10 border-b border-white bg-inherit px-2 py-2 tabular-nums">{it.no}</td>
                   <td className={`sticky left-10 z-10 min-w-[18rem] max-w-[24rem] border-b border-white bg-inherit px-2 py-2 ${strike(it)}`}>
-                    <button className="text-left font-semibold leading-snug hover:underline" title="Открыть карточку позиции" onClick={() => onOpen(it)}>{it.name}</button>
+                    <button className={`text-left font-semibold leading-snug ${strike(it) || 'hover:underline'}`} title="Открыть карточку позиции" onClick={() => onOpen(it)}>{it.name}</button>
                     <FilesMark it={it} />
                     {spec(it) && <div className="mt-0.5 text-xs font-normal opacity-75">{spec(it)}</div>}
                     {it.aliasNames.length > 0 && <div className="text-xs font-normal opacity-60">= {it.aliasNames.join(', ')}</div>}

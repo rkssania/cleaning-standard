@@ -5,7 +5,7 @@ import { CATEGORIES } from '../lib/categories.js';
 import { download } from '../lib/excelExport.js';
 import { prepareFile } from '../lib/files.js';
 import { fmtMoney } from '../lib/normalize.js';
-import { EditInput, Field, Modal, NeedBlock, PersonSelect, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
+import { DeliverySelect, EditInput, Field, Modal, NeedBlock, PersonSelect, QtyStepper, Rooms, StatusBadge } from './ui.jsx';
 import LinkPicker from './LinkPicker.jsx';
 
 /** Редактор помещений: «где стоит» и сколько штук в каждом. */
@@ -108,6 +108,13 @@ export default function ItemDialog({ item, store, onClose }) {
   const it = built.items.find((i) => i.key === item.key) || item;
   const merged = Object.entries(state.aliases).filter(([from, to]) => from !== it.key && built.items.some((i) => i.key === it.key) && resolveKey(from, state.aliases) === it.key);
   const e = (patch) => edit(it.key, patch);
+  const [saved, setSaved] = useState(false);
+  // уходим из поля, чтобы оно записалось, и закрываем карточку
+  const save = () => {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    setSaved(true);
+    setTimeout(onClose, 700);
+  };
   return (
     <Modal title={it.name} onClose={onClose}>
       <div className="space-y-3">
@@ -116,10 +123,10 @@ export default function ItemDialog({ item, store, onClose }) {
           <span className="text-xs text-slate-500">№ {it.no} · {it.source === 'sd' ? 'из заявки СД' : it.source === 'ks' ? 'нет в заявке СД (из КС Астана)' : 'добавлено вручную'}</span>
         </div>
         <Field label="Название (можно изменить)"><EditInput value={it.name} onCommit={(v) => e({ name: v === it.origName ? '' : v })} /></Field>
-        <label className="flex items-center gap-2 rounded-lg bg-emerald-50 p-2 text-sm font-medium">
-          <input type="checkbox" className="h-4 w-4" checked={it.done} onChange={(ev) => e({ done: ev.target.checked })} />
-          <CheckCircle2 size={16} className="text-emerald-700" /> Готово: уже установлено
-        </label>
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-2 text-sm font-medium">
+          <CheckCircle2 size={16} className="text-emerald-700" /> Статус закупки:
+          <DeliverySelect value={it.delivery} onChange={(v) => e({ delivery: v, done: '' })} />
+        </div>
         {it.canDecide && (
           <div className="rounded-lg bg-slate-100 p-3">
             <NeedBlock it={it} onEdit={e} />
@@ -175,6 +182,10 @@ export default function ItemDialog({ item, store, onClose }) {
         <div className="flex flex-wrap gap-2 border-t pt-3">
           <button className="btn" onClick={() => { e({ removed: true }); onClose(); }}><EyeOff size={15} /> Убрать из списка</button>
           {it.manualId && <button className="btn text-red-700" onClick={() => { removeManual(it.manualId); onClose(); }}><Trash2 size={15} /> Удалить позицию</button>}
+        </div>
+        <div className="sticky bottom-0 -mx-4 -mb-4 border-t bg-white p-3">
+          <button className="btn btn-primary w-full !py-3 text-base" onClick={save}>{saved ? 'Сохранено ✓' : 'Сохранить'}</button>
+          <p className="mt-1 text-center text-[11px] text-slate-500">Изменения записываются сразу; кнопка подтверждает и закрывает карточку.</p>
         </div>
       </div>
     </Modal>

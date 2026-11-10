@@ -7,6 +7,9 @@ export const ROW_STYLE = {
   china: 'bg-green-100 text-green-900',
   ordering: 'bg-green-100 text-green-900',
   done: 'bg-emerald-200 text-emerald-950',
+  notordered: 'bg-red-100 text-red-950',
+  toinstall: 'bg-sky-100 text-sky-950',
+  transit: 'bg-yellow-100 text-yellow-950',
   toorder: 'bg-orange-100',
   request: 'bg-yellow-100',
   added: 'bg-red-100',
@@ -17,6 +20,9 @@ export const BADGE_STYLE = {
   china: 'bg-green-600 text-white',
   ordering: 'bg-green-600 text-white',
   done: 'bg-emerald-800 text-white',
+  notordered: 'bg-red-600 text-white',
+  toinstall: 'bg-sky-600 text-white',
+  transit: 'bg-yellow-400 text-yellow-950',
   toorder: 'bg-orange-500 text-white',
   request: 'bg-yellow-400 text-yellow-950',
   added: 'bg-red-600 text-white',
@@ -25,10 +31,13 @@ export const BADGE_STYLE = {
 };
 
 // Простыми словами: Китай заказ 1 = «Едет», заказ 2 = «Заказ Китай №2» (оба зелёные), только в заявке = «Надо согласовать» (жёлтый).
-const SHORT = { done: 'Готово', china: 'Едет', ordering: 'Заказ Китай №2', toorder: 'Надо заказать', request: 'Надо согласовать', declined: 'Не надо', extra: 'Едет из Китая' };
-const SUB = { done: 'установлено', china: 'Китай, заказ 1', ordering: 'в процессе оформления', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
+const SHORT = { notordered: 'Не заказано', toinstall: 'Будут устанавливать', transit: 'В пути', done: 'Установлено / доставлено', china: 'Едет', ordering: 'Заказ Китай №2', toorder: 'Надо заказать', request: 'Надо согласовать', declined: 'Не надо', extra: 'Едет из Китая' };
+const SUB = { notordered: '', toinstall: '', transit: '', done: '', china: 'Китай, заказ 1', ordering: 'в процессе оформления', toorder: 'есть в СД и КС Астана', request: 'в заявке СД', declined: '', extra: 'нет в потребности' };
 const HINT = {
-  done: 'Уже сделано и установлено. Подтверждение можно приложить в карточке.',
+  done: 'Доставлено и установлено. Подтверждение можно приложить в карточке.',
+  notordered: 'Ещё не заказано.',
+  toinstall: 'Заказано, будут устанавливать.',
+  transit: 'Заказано, в пути.',
   china: 'Едет из Китая (заказ 1). Покупать не нужно.',
   ordering: 'Китай, заказ 2: в процессе оформления. Покупать не нужно.',
   toorder: 'Есть и в заявке СД, и в потребности КС Астана. Нужно заказывать.',
@@ -220,6 +229,18 @@ export function PersonSelect({ value, onCommit, className = '' }) {
       <option value="">— не выбран —</option>
       {PEOPLE.map((p) => <option key={p} value={p}>{p}</option>)}
       {value && !matched && <option value={value}>{value}</option>}
+    </select>
+  );
+}
+
+const DELIVERY_OPTIONS = [['notordered', 'Не заказано'], ['toinstall', 'Будут устанавливать'], ['transit', 'В пути'], ['done', 'Установлено / доставлено']];
+
+/** Ручной статус закупки. Пока он не выбран, показывается вычисленный («Надо заказать» и т. п.). */
+export function DeliverySelect({ value, onChange, className = '' }) {
+  return (
+    <select className={`rounded border border-slate-400 bg-white px-1.5 py-1 text-xs font-medium text-slate-800 ${className}`} aria-label="Статус закупки" value={value || ''} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{value ? '— убрать отметку —' : 'Отметить статус…'}</option>
+      {DELIVERY_OPTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
     </select>
   );
 }
