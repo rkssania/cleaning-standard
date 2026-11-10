@@ -14,10 +14,16 @@ export const STAGES = [
 ];
 export const STAGE_LABEL = Object.fromEntries(STAGES);
 
+// ручной статус закупки: заменяет вычисленный («Надо заказать» и т. п.)
+export const DELIVERY = ['notordered', 'toinstall', 'transit', 'done'];
+
 export const STATUS = {
   china: 'Едет (Китай, заказ 1)',
   ordering: 'Заказ Китай №2',
-  done: 'Готово (установлено)',
+  done: 'Установлено / доставлено',
+  notordered: 'Не заказано',
+  toinstall: 'Будут устанавливать',
+  transit: 'В пути',
   toorder: 'Надо заказать',
   request: 'Надо согласовать',
   added: 'НАДО ЛИ?',
@@ -149,13 +155,14 @@ export function buildList(state) {
     const od = ch ? ch.ordering : 0; // в процессе оформления (Заказ 2)
     const covered = china > 0 && china >= total;
     // «НАДО?» решается только для позиций, которых нет ни в заявке СД, ни в Китае (красные)
-    const canDecide = !covered && b.source !== 'sd' && !done;
+    const del = DELIVERY.includes(ed.delivery) ? ed.delivery : done ? 'done' : '';
+    const canDecide = !covered && b.source !== 'sd' && !del;
     const need = canDecide ? ed.need || '' : '';
     const declined = need === 'no';
-    const buy = declined || done ? 0 : Math.max(0, total - china);
-    const status = done ? 'done' : covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? (ks.has(key) ? 'toorder' : 'request') : 'added';
+    const buy = declined || (del && del !== 'notordered') ? 0 : Math.max(0, total - china);
+    const status = del ? del : covered ? (tr >= total ? 'china' : 'ordering') : declined ? 'declined' : b.source === 'sd' ? (ks.has(key) ? 'toorder' : 'request') : 'added';
     const parts = [tr && `едет ${tr}`, od && `оформляется ${od}`].filter(Boolean);
-    const partial = declined || done || !china || (covered && parts.length === 1) ? '' : [...parts, buy ? `докупить ${buy}` : ''].filter(Boolean).join(', ');
+    const partial = declined || del || !china || (covered && parts.length === 1) ? '' : [...parts, buy ? `докупить ${buy}` : ''].filter(Boolean).join(', ');
     const price = toNum(ed.price);
     items.push({
       key,
@@ -180,6 +187,7 @@ export function buildList(state) {
       sources: [...(b.srcs ?? []), ...(ch ? [...ch.orders] : [])],
       roomList: [...roomMap.keys()],
       status,
+      delivery: del,
       canDecide,
       need,
       needReason: canDecide ? ed.needReason || '' : '',
@@ -212,12 +220,13 @@ export function buildList(state) {
     const total = ed.qty !== undefined && ed.qty !== '' ? toNum(ed.qty) : baseQty;
     const done = ed.done === true;
     const price = toNum(ed.price);
-    const buy = done ? 0 : total;
+    const del = DELIVERY.includes(ed.delivery) ? ed.delivery : done ? 'done' : '';
+    const buy = del && del !== 'notordered' ? 0 : total;
     items.push({
       key, name: ed.name || r.name, origName: r.name, done, aliasNames: [], size: r.size || '', notes: [r.spec, r.note].filter(Boolean), comments: [],
       category: normCat(ed.category) || sec.title, baseQty, qty: total, qtyEdited: ed.qty !== undefined && ed.qty !== '', sdQty: 0, ksQty: 0, china: 0, buy,
       rooms: roomsText(roomMap), roomEntries: [...roomMap], roomsEdited: roomMap.size > 0 && Array.isArray(ed.rooms) && ed.rooms.length > 0, sources: [sec.title], roomList: [...roomMap.keys()],
-      status: done ? 'done' : 'toorder', canDecide: false, need: '', needReason: '', partial: done ? '' : 'по ТЗ', chinaTransit: 0, chinaOrdering: 0,
+      status: del || 'toorder', delivery: del, canDecide: false, need: '', needReason: '', partial: del ? '' : 'по ТЗ', chinaTransit: 0, chinaOrdering: 0,
       supplier: ed.supplier || '', price, sum: buy * price, responsible: ed.responsible || sec.responsible || '', deadline: ed.deadline || '', stage: ed.stage || 'not_started',
       comment: ed.comment || '', source: 'section', sectionId: sec.id, ord: si * 1000 + ri,
     });
@@ -260,7 +269,7 @@ export function buildList(state) {
 }
 
 export function summarize(items, facts = {}) {
-  const counts = { done: 0, china: 0, ordering: 0, toorder: 0, request: 0, added: 0, declined: 0 };
+  const counts = { notordered: 0, toinstall: 0, transit: 0, done: 0, china: 0, ordering: 0, toorder: 0, request: 0, added: 0, declined: 0 };
   let total = 0;
   const sup = new Map();
   for (const it of items) {

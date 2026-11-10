@@ -258,3 +258,17 @@ test('помещения приводятся к названию по план�
   assert.equal(canonRoom('Склад НПВС (НПВ склад)'), 'Склад НПВ (пом. 16)');
   assert.equal(canonRoom('Палата реанимации'), 'Палата реанимации'); // незнакомые названия не меняются
 });
+
+test('ручной статус закупки заменяет вычисленный и убирает «Надо заказать»', () => {
+  const key = looseKey('Кровать функциональная');
+  const bed = (delivery) => buildList(st({ edits: delivery ? { [key]: { delivery } } : {} })).items.find((i) => i.name === 'Кровать функциональная');
+  assert.equal(bed('').status, 'toorder');
+  assert.equal(bed('notordered').status, 'notordered');
+  assert.equal(bed('notordered').buy, 6); // ещё не заказано — докупить как раньше
+  assert.equal(bed('transit').status, 'transit');
+  assert.equal(bed('transit').buy, 0);
+  assert.equal(bed('toinstall').status, 'toinstall');
+  assert.equal(bed('done').status, 'done');
+  const old = buildList(st({ edits: { [key]: { done: true } } })).items.find((i) => i.name === 'Кровать функциональная');
+  assert.equal(old.status, 'done'); // прежняя отметка «Готово» работает как «Установлено / доставлено»
+});
